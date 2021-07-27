@@ -80,18 +80,31 @@ def get_post(post_type, post_id):
         res.status_code = 404
         return res
 
-# get all posts by type
-@app.route('/api/<post_type>')
+# get all posts by type or add new post to type
+@app.route('/api/<post_type>', methods=['GET', 'POST'])
 def get_posts(post_type):
-    post_type = post_type.upper()
-    posts = Post.query.filter_by(post_type=post_type).all()
-    if len(posts) > 0:
-        output = posts_schema.dump(posts)
-        return jsonify({'message': 'Successfully received posts', 'posts': output})
-    else:
-        res = jsonify({'error': f"{post_type} is not a valid post type"})
-        res.status_code = 404
-        return res
+    if request.method == 'GET':
+        post_type = post_type.upper()
+        posts = Post.query.filter_by(post_type=post_type).all()
+        if len(posts) > 0:
+            output = posts_schema.dump(posts)
+            return jsonify({'message': 'Successfully received posts', 'posts': output})
+        else:
+            res = jsonify({'error': f"{post_type} is not a valid post type"})
+            res.status_code = 404
+            return res
+    if request.method == 'POST':
+        data = request.json
+        new_db_post = Post(data['title'], data['topic_id'], data['url'], data['creator'], data['created'], data['views'], data['replies'], data['last_updated'], data['post_type'])
+        db.session.add(new_db_post)
+        db.session.commit()
+
+        for img_url in data['images']:
+            new_db_image = Image(img_url, new_db_post)
+            db.session.add(new_db_image)
+            db.session.commit()
+        db.session.close()
+        return jsonify({'message': 'Successfully added new post'})
 
 # update db by type
 @app.route('/api/update/<post_type>')
