@@ -5,23 +5,18 @@ from flask_marshmallow import Marshmallow
 from dotenv import load_dotenv
 import os
 
-from functions import update_post, get_all_post_data, get_page_posts_small_data, get_last_page, populate_db, update_db_by_type, check_post
+from functions import update_post, get_all_post_data, get_page_posts_small_data, get_last_page, update_db_by_type, check_post
 
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
-env = 'DEV'
-if env == 'DEV':
-    app.debug = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-    app.config['SQLaLCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
-else:
-    app.debug = False
-    uri = os.getenv('DATABASE_URL')
-    if uri.startswith('postgres://'):
-        uri = uri.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = uri
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
+
+app.debug = False
+uri = os.getenv('DATABASE_URL')
+if uri.startswith('postgres://'):
+    uri = uri.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
