@@ -10,13 +10,18 @@ from functions import update_post, get_all_post_data, get_page_posts_small_data,
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
-
-app.debug = False
-uri = os.getenv('DATABASE_URL')
-if uri.startswith('postgres://'):
-    uri = uri.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
+env = 'DEV'
+if env == 'DEV':
+    app.debug = True
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['SQLaLCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
+else:
+    app.debug = False
+    uri = os.getenv('DATABASE_URL')
+    if uri.startswith('postgres://'):
+        uri = uri.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = uri
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -98,6 +103,7 @@ def get_posts(post_type):
 def update(post_type):
     post_type = post_type.upper()
     url = ''
+    count = 0
 
     if post_type == 'IC':
         url = 'https://geekhack.org/index.php?board=132.0'
@@ -107,6 +113,8 @@ def update(post_type):
             value = check_post(post_all_data, Post, Image, db)
             if value == 1:
                 break
+            else:
+                count += 1
 
     if post_type == 'GB':
         url = 'https://geekhack.org/index.php?board=70.0'
@@ -116,23 +124,12 @@ def update(post_type):
             value = check_post(post_all_data, Post, Image, db)
             if value == 1:
                 break
+            else:
+                count += 1
     if post_type == 'DB':
         update('IC')
         update('GB')
-    return jsonify({'message': 'Successfully updated db.'})
-
-# populate database -- temp endpoint
-@app.route('/api/populate-db')
-def populate():
-    IC_url = 'https://geekhack.org/index.php?board=132.'
-    last_page_IC = get_last_page(IC_url)
-    populate_db(IC_url, last_page_IC, 'IC', Post, Image, db)
-
-    GB_url = 'https://geekhack.org/index.php?board=70.'
-    last_page_GB = get_last_page(GB_url)
-    populate_db(GB_url, last_page_GB, 'GB', Post, Image, db)
-
-    return jsonify({'message': 'Successfully populated db'})
+    return jsonify({'message': f"Successfully updated {count + 1} posts."})
 
 if __name__ == "__main__":
     app.run()
