@@ -199,7 +199,7 @@ def update_db_by_type(post_type, post_model, image_model, db):
       
 def populate_db(url, num_pages, post_type, post_model, image_model, db):
   count = 0
-  for i in range(1, num_pages + 1):
+  for i in range(1, int(num_pages) + 1):
     print(f"starting scraping - {post_type}")
     print(f"{i} of {num_pages}")
     current_url = f"{url}{count}"
