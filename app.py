@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.debug = False
+app.debug = True
 uri = os.getenv('DATABASE_URL')
 if uri.startswith('postgres://'):
     uri = uri.replace('postgres://', 'postgresql://', 1)
@@ -104,6 +104,7 @@ def get_posts(post_type):
             db.session.add(new_db_image)
             db.session.commit()
         db.session.close()
+
         return jsonify({'message': 'Successfully added new post'})
 
 # update db by type
