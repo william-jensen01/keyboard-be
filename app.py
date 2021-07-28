@@ -27,11 +27,11 @@ class Post(db.Model):
     topic_id = db.Column(db.Integer, nullable=False)
     url = db.Column(db.String(200), nullable=False)
     creator = db.Column(db.String(50), nullable=False)
-    created = db.Column(db.String(40))
+    created = db.Column(db.String(35))
     images = db.relationship('Image', backref='post')
     views = db.Column(db.Integer)
     replies = db.Column(db.Integer)
-    last_updated = db.Column(db.String(40))
+    last_updated = db.Column(db.String(35))
     post_type = db.Column(db.String(5), nullable=False)
 
     def __init__(self, title, topic_id, url, creator, created, views, replies, last_updated, post_type):
