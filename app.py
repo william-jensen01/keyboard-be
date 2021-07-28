@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.debug = True
+app.debug = False
 uri = os.getenv('DATABASE_URL')
 if uri.startswith('postgres://'):
     uri = uri.replace('postgres://', 'postgresql://', 1)
