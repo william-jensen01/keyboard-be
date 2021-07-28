@@ -79,10 +79,9 @@ def get_all_post_data(small_data, post_type):
 
   post_title = soup.find('h5').text.replace(f"\n", '').lstrip()
 
-  post_creator = poster_container.find('a').text
-
+  post_creator = poster_container.find('h4').text.replace(f"\n", '').replace(f"\t", '')
   date_created_reference = soup.find('div', class_="smalltext").text[7:-12]
-  day_of_week = date_created_reference[0:5]
+  day_of_week = date_created_reference[0:3]
   day = date_created_reference[5:7]
   month = date_created_reference[8:-5]
   year = date_created_reference[-4:]
