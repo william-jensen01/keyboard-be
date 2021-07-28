@@ -21,9 +21,9 @@ def get_page_posts_small_data(url):
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
 
-  all_posts = soup.find_all('td', class_='subject windowbg2')
-  all_posts_activity_stats = soup.find_all('td', class_='stats windowbg')
-  all_last_updated_stats = soup.find_all('td', class_='lastpost windowbg2')
+  all_posts = soup.find_all('td', class_='subject')
+  all_posts_activity_stats = soup.find_all('td', class_='stats')
+  all_last_updated_stats = soup.find_all('td', class_='lastpost')
 
   all_posts_url = []
   all_topic_ids = []
@@ -33,8 +33,7 @@ def get_page_posts_small_data(url):
   for post in all_posts:
     weird_url = post.find('a').get('href')
     url_list = weird_url.split('=')
-    topic = url_list[-1]
-    topic_id = topic.split('.')[0]
+    topic_id = url_list[-1].split('.')[0]
     post_url = f'https://geekhack.org/index.php?topic={topic_id}.0'
     all_posts_url.append(post_url)
     all_topic_ids.append(topic_id)
@@ -55,13 +54,14 @@ def get_page_posts_small_data(url):
   small_data = []
 
   for i in range(len(all_posts_url)):
-    post_small_data = {
-      'url': all_posts_url[i],
-      'stats': all_activity_stats[i],
-      'last_updated': all_last_updated[i],
-      'topic': all_topic_ids[i]
-    }
-    small_data.append(post_small_data)
+    if all_topic_ids[i] != '36672': # making sure the post isn't the stickied one
+      post_small_data = {
+        'url': all_posts_url[i],
+        'stats': all_activity_stats[i],
+        'last_updated': all_last_updated[i],
+        'topic': all_topic_ids[i]
+      }
+      small_data.append(post_small_data)
   return small_data
 
 def get_all_post_data(small_data, post_type):
