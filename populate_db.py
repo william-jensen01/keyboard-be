@@ -7,8 +7,7 @@ def populate_helper(post_type, last_page, url):
     API_URL = os.getenv('API_URL')
     count = 0
     for i in range(1, int(last_page) + 1):
-        print(f"starting scraping - {post_type}")
-        print(f"{i} of {last_page}")
+        print(f"starting scraping {i} of {last_page} - {post_type}")
         current_url = f"{url}{count}"
         small_page_data = get_page_posts_small_data(current_url)
         for post_small_data in small_page_data:
