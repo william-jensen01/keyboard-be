@@ -196,16 +196,3 @@ def update_db_by_type(post_type, post_model, image_model, db):
   if post_type == 'DB':
     update_db_by_type('IC', post_model, image_model, db)
     update_db_by_type('GB', post_model, image_model, db)
-      
-def populate_db(url, num_pages, post_type, post_model, image_model, db):
-  count = 0
-  for i in range(1, num_pages + 1):
-    print(f"starting scraping - {post_type}")
-    print(f"{i} of {num_pages}")
-    current_url = f"{url}{count}"
-    small_page_data = get_page_posts_small_data(current_url)
-    for post_small_data in small_page_data:
-      post_all_data = get_all_post_data(post_small_data, post_type)
-      check_post(post_all_data, post_model, image_model, db)
-    count += 50
-    print(f"finished scraping {i} of {num_pages} - {post_type}")
