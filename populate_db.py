@@ -1,7 +1,10 @@
-from app import Post, Image, db
+import requests
+import os
+
 from functions import get_last_page, get_page_posts_small_data, get_all_post_data
 
 def populate_helper(post_type, last_page, url):
+    API_URL = os.getenv('API_URL')
     count = 0
     for i in range(1, int(last_page) + 1):
         print(f"starting scraping - {post_type}")
@@ -11,15 +14,7 @@ def populate_helper(post_type, last_page, url):
         for post_small_data in small_page_data:
             print('adding new post')
             post_all_data = get_all_post_data(post_small_data, post_type)
-            new_db_post = Post(post_all_data['title'], post_all_data['topic_id'], post_all_data['url'], post_all_data['creator'], post_all_data['created'], post_all_data['views'], post_all_data['replies'], post_all_data['last_updated'], post_all_data['post_type'])
-            db.session.add(new_db_post)
-            db.session.commit()
-
-            for img_url in post_all_data['images']:
-                new_db_image = Image(img_url, new_db_post)
-                db.session.add(new_db_image)
-                db.session.commit()
-            db.session.close()
+            requests.post(f"{API_URL}/{post_type}", json = post_all_data)
         count += 50
         print(f"finished scraping {i} of {last_page} - {post_type}")
 
