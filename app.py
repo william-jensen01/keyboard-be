@@ -5,7 +5,7 @@ from flask_marshmallow import Marshmallow
 from dotenv import load_dotenv
 import os
 
-from functions import update_post, get_all_post_data, get_page_posts_small_data, get_last_page, update_db_by_type, check_post
+from functions import update_post, get_all_post_data, get_page_posts_small_data, get_last_page, check_post
 
 load_dotenv()
 app = Flask(__name__)
@@ -80,6 +80,19 @@ def get_post(post_type, post_id):
         res.status_code = 404
         return res
 
+# get all posts with specified topic_id -- USE FOR PAGINATE
+@app.route('/api/post/<topic_id>')
+def delete_post(topic_id):
+    post = Post.query.filter_by(topic_id=topic_id).first()
+    if post:
+        db.session.delete(post)
+        db.session.commit()
+        output = {}
+    else:
+        output = 'already deleted'
+    
+    return jsonify({'message': 'Successfully deleted post', 'output': output})
+
 # get all posts by type or add new post to type
 @app.route('/api/<post_type>', methods=['GET', 'POST'])
 def get_posts(post_type):
@@ -112,7 +125,6 @@ def get_posts(post_type):
 def update(post_type):
     post_type = post_type.upper()
     url = ''
-    count = 0
 
     if post_type == 'IC':
         url = 'https://geekhack.org/index.php?board=132.0'
@@ -135,10 +147,12 @@ def update(post_type):
                 break
             else:
                 count += 1
+
     if post_type == 'DB':
         update('IC')
         update('GB')
-    return jsonify({'message': f"Successfully updated {count + 1} posts."})
+
+    return jsonify({'message': f"Successfully updated {post_type}."})
 
 if __name__ == "__main__":
     app.run()

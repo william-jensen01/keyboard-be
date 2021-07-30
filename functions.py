@@ -48,13 +48,13 @@ def get_page_posts_small_data(url):
     day = last_updated_reference_list[1]
     month = last_updated_reference_list[2]
     year = last_updated_reference_list[3][:-1]
-    last_updated = f"{time} {day_of_week}, {month} {day}, {year}" # example = "Wed, March 31, 2021"
+    last_updated = f"{time} {day_of_week}, {month} {day}, {year}" # example: "10:30:17 Wed, March 31, 2021"
     all_last_updated.append(last_updated)
 
   small_data = []
-
+  unaccepted_topic_ids = set(('36672', '70569', '77272', '57761', '88717', '36773'))
   for i in range(len(all_posts_url)):
-    if all_topic_ids[i] != '36672': # making sure the post isn't the stickied one
+    if all_topic_ids[i] not in unaccepted_topic_ids:
       post_small_data = {
         'url': all_posts_url[i],
         'stats': all_activity_stats[i],
@@ -80,13 +80,14 @@ def get_all_post_data(small_data, post_type):
   post_title = soup.find('h5').text.replace(f"\n", '').lstrip()
 
   post_creator = poster_container.find('h4').text.replace(f"\n", '').replace(f"\t", '')
-  date_created_reference = soup.find('div', class_="smalltext").text[7:-12]
-  day_of_week = date_created_reference[0:3]
-  day = date_created_reference[5:7]
-  month = date_created_reference[8:-5]
-  year = date_created_reference[-4:]
-  date_created = f"{day_of_week}, {month} {day}, {year}"
-  # example: "Wed, March 31, 2021"
+
+  date_created_reference_list = soup.find('div', class_="smalltext").text.split()
+  time = date_created_reference_list[6]
+  day_of_week = date_created_reference_list[2][:-1]
+  day = date_created_reference_list[3]
+  month = date_created_reference_list[4]
+  year = date_created_reference_list[5][:-1]
+  date_created = f"{time} {day_of_week}, {month} {day}, {year}" # example: "10:30:17 Wed, March 31, 2021"
 
   post_images = []
   images = post_container.find_all('img')
@@ -120,9 +121,6 @@ def go_through_all_posts(url, num_pages, small_post_data, post_type, post_model,
     count += 50
   print(f"finished scraping {i} of {num_pages} - {post_type}")
 
-# update post by id
-# paramets include serialized post object, and request data
-# Note: all fields are required
 def update_post(post, data):
   post.title = data['title']
   post.topic_id = data['topic_id']
@@ -141,7 +139,7 @@ def check_post(post_all_data, post_model, image_model, db):
 
   db_post = post_model.query.filter_by(topic_id=post_topic_id).first()
   if db_post:
-    print('post exists ... updating')
+    print(f"updating {db_post.title}")
     db_post_time = db_post.last_updated
     if db_post_time == post_time and db_post.topic_id == post_topic_id:
       return 1
@@ -162,7 +160,7 @@ def check_post(post_all_data, post_model, image_model, db):
 
     db.session.close()
   else:
-    print("post doesn't exist, adding it to db")
+    print(f"adding {post_all_data['title']}")
     new_db_post = post_model(post_all_data['title'], post_all_data['topic_id'], post_all_data['url'], post_all_data['creator'], post_all_data['created'], post_all_data['views'], post_all_data['replies'], post_all_data['last_updated'], post_all_data['post_type'])
     db.session.add(new_db_post)
     db.session.commit()
@@ -173,25 +171,3 @@ def check_post(post_all_data, post_model, image_model, db):
       db.session.commit()
     db.session.close()
     return 0
-
-def update_db_by_type(post_type, post_model, image_model, db):
-  post_type = post_type.upper()
-  url = ''
-
-  if post_type == 'IC':
-    url = 'https://geekhack.org/index.php?board=132.0'
-    page_small_data = get_page_posts_small_data(url)
-    for post_small_data in page_small_data:
-      post_all_data = get_all_post_data(post_small_data, post_type)
-      check_post(post_all_data, post_model, image_model, db)
-
-  if post_type == 'GB':
-    url = 'https://geekhack.org/index.php?board=70.0'
-    page_small_data = get_page_posts_small_data(url)
-    for post_small_data in page_small_data:
-      post_all_data = get_all_post_data(post_small_data, post_type)
-      check_post(post_all_data, post_model, image_model, db)
-
-  if post_type == 'DB':
-    update_db_by_type('IC', post_model, image_model, db)
-    update_db_by_type('GB', post_model, image_model, db)
