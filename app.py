@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.debug = False
+app.debug = True
 uri = os.getenv('DATABASE_URL')
 if uri.startswith('postgres://'):
     uri = uri.replace('postgres://', 'postgresql://', 1)
@@ -134,8 +134,6 @@ def update(post_type):
             value = check_post(post_all_data, Post, Image, db)
             if value == 1:
                 break
-            else:
-                count += 1
 
     if post_type == 'GB':
         url = 'https://geekhack.org/index.php?board=70.0'
@@ -145,8 +143,6 @@ def update(post_type):
             value = check_post(post_all_data, Post, Image, db)
             if value == 1:
                 break
-            else:
-                count += 1
 
     if post_type == 'DB':
         update('IC')
@@ -154,5 +150,27 @@ def update(post_type):
 
     return jsonify({'message': f"Successfully updated {post_type}."})
 
+@app.route('/api/latest/<post_type>')
+def get_latest_posts(post_type):
+    post_type = post_type.upper()
+    latest_posts = db.engine.execute(f"SELECT * FROM post WHERE post_type = '{post_type}' ORDER BY SUBSTRING(last_updated, LENGTH(last_updated) - 3, 4) DESC, EXTRACT(MONTH FROM to_date(SUBSTRING(last_updated, 15, LENGTH(last_updated) - 23), 'Mon')) DESC, SUBSTRING(last_updated, LENGTH(last_updated) - 7, 2) DESC, SUBSTRING(last_updated, 1,8) DESC LIMIT 10")
+    output = posts_schema.dump(latest_posts)
+    return jsonify({'message': 'TEST', 'posts': output})
+
+@app.route('/api/newest/<post_type>')
+def get_newest_posts(post_type):
+    post_type = post_type.upper()
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 5, type=int)
+    start_index = (page-1) * limit
+    last_index = page * limit
+    newest_posts = db.engine.execute(f"SELECT * FROM post WHERE post_type = '{post_type}' ORDER BY SUBSTRING(created, LENGTH(created) - 3, 4) DESC, EXTRACT(MONTH FROM to_date(SUBSTRING(created, 15, LENGTH(created) - 23), 'Mon')) DESC, SUBSTRING(created, LENGTH(created) -7, 2) DESC, SUBSTRING(created, 1, 8) DESC LIMIT 10")
+    # print(newest_posts)
+    # print(dir(newest_posts))
+    print(newest_posts.lastrowid)
+    test = posts_schema.dump(newest_posts)
+    output = test[start_index:last_index]
+    return jsonify({'message': f"Successfully received newest {post_type} posts", 'posts': output})
+    
 if __name__ == "__main__":
     app.run()
