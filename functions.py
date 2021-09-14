@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import re
 
 # get the last page of a forum
 def get_last_page(url):
@@ -20,6 +21,13 @@ def get_last_page(url):
 def get_page_posts_small_data(url):
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
+
+  post_type = ''
+  board_num = re.split('\.|\=', url)[-2]
+  if board_num == '132':
+    post_type = 'IC'
+  if board_num == '70':
+    post_type = 'GB'
 
   all_posts = soup.find_all('td', class_='subject')
   all_posts_activity_stats = soup.find_all('td', class_='stats')
@@ -59,17 +67,19 @@ def get_page_posts_small_data(url):
         'url': all_posts_url[i],
         'stats': all_activity_stats[i],
         'last_updated': all_last_updated[i],
-        'topic': all_topic_ids[i]
+        'topic': all_topic_ids[i],
+        'post_type': post_type
       }
       small_data.append(post_small_data)
   return small_data
 
-def get_all_post_data(small_data, post_type):
+def get_all_post_data(small_data):
   url = small_data['url']
   replies = small_data['stats'][0]
   views = small_data['stats'][2]
   last_updated = small_data['last_updated']
   topic_id = small_data['topic']
+  post_type = small_data['post_type']
 
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
@@ -93,8 +103,17 @@ def get_all_post_data(small_data, post_type):
   images = post_container.find_all('img')
   for image in images:
       image_url = image.get('src')
-      post_images.append(image_url)
 
+      # if url is geekhack, remove PHPSESSID from url
+      if image_url.startswith('https://geekhack.org'):
+        split_url = re.split('\?|&', image_url)
+        new_url = f"{split_url[0]}?{split_url[2]}"
+        post_images.append(new_url)
+      elif image_url.startswith('https://cdn.geekhack.org'):
+        pass
+      else:
+        post_images.append(image_url)
+        
   all_data = {
   'title': post_title,
   'topic_id': topic_id,

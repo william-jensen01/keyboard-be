@@ -1,13 +1,13 @@
+from re import search
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from dotenv import load_dotenv
 import os
+import math
 
 from functions import update_post, get_all_post_data, get_page_posts_small_data, get_last_page, check_post
 
-load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
@@ -57,7 +57,7 @@ class Image(db.Model):
 
 class ImageSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ('id', 'image_url', 'post_id')
+        fields = ('id', 'image_url')
 
 class PostSchema(ma.SQLAlchemyAutoSchema):
     images = ma.Nested(ImageSchema, many=True)
@@ -66,6 +66,63 @@ class PostSchema(ma.SQLAlchemyAutoSchema):
 
 posts_schema = PostSchema(many=True)
 post_schema = PostSchema()
+images_schema = ImageSchema(many=True)
+image_schema = ImageSchema()
+
+@app.route('/api/posts', methods=['POST'])
+def get_posts_by_query():
+    if request.method == 'POST':
+        search_query = request.json['query'].lower()
+        limit = request.args.get('limit', 25, type=int)
+        posts= db.engine.execute(f"SELECT p.*, array_agg(i.image_url) AS images FROM post p LEFT JOIN image i ON i.post_id = p.id WHERE LOWER(p.title) LIKE '%%{search_query}%%' GROUP BY 1")
+        res = [dict(post._mapping.items()) for post in posts]
+
+        num_posts = len(res)
+        num_pages = math.ceil(num_posts / limit)
+        print(num_posts)
+
+        return jsonify({"message": f"Successfully received posts matching: {search_query}", 'pages': num_pages, 'posts': res})
+
+@app.route('/api/<date_type>/<post_type>')
+# date_type -> latest or newest
+# post_type -> IC, GB, or All
+def get_posts(date_type, post_type):
+    post_type = post_type.upper()
+    date_type = date_type.lower()
+    limit = request.args.get('limit', 25, type=int)
+    page = request.args.get('page', 1, type=int)
+    start_index = (page-1) * limit
+
+    # check if post_type is valid
+    if post_type == 'IC' or post_type == 'GB' or post_type == 'ALL':
+        pass
+    else:
+        res = jsonify({'error': f"Invalid post type: {post_type}"})
+        res.status_code = 400
+        return res
+
+    # check if date_type is valid
+    if date_type == 'latest':
+        time = 'last_updated'
+    elif date_type == 'newest':
+        time = 'created'
+    else:
+        res = jsonify({'error': f"Invalid date type: {date_type}."})
+        res.status_code = 400
+        return res
+
+    # if post_type is IC or GB
+    if post_type != 'ALL':
+        newest_posts = db.engine.execute(f"SELECT p.*, array_agg(i.image_url) AS images FROM post p LEFT JOIN image i ON i.post_id = p.id WHERE p.post_type='{post_type}' GROUP BY 1 ORDER BY SUBSTRING(p.{time}, LENGTH(p.{time}) - 3, 4) DESC, EXTRACT(MONTH FROM to_date(SUBSTRING(p.{time}, 15, LENGTH(p.{time}) - 23), 'Mon')) DESC, SUBSTRING(p.{time}, LENGTH(p.{time}) - 7, 2) DESC, SUBSTRING(p.{time}, 1,8) DESC LIMIT {limit} OFFSET {start_index}")
+        num_posts = Post.query.filter_by(post_type=post_type).count()
+    elif post_type == 'ALL':
+        newest_posts = db.engine.execute(f"SELECT p.*, array_agg(i.image_url) AS images FROM post p LEFT JOIN image i ON i.post_id = p.id GROUP BY 1 ORDER BY SUBSTRING(p.{time}, LENGTH(p.{time}) - 3, 4) DESC, EXTRACT(MONTH FROM to_date(SUBSTRING(p.{time}, 15, LENGTH(p.{time}) - 23), 'Mon')) DESC, SUBSTRING(p.{time}, LENGTH(p.{time}) - 7, 2) DESC, SUBSTRING(p.{time}, 1,8) DESC LIMIT {limit} OFFSET {start_index}")
+        num_posts = Post.query.count()
+
+    res = [dict(post._mapping.items()) for post in newest_posts]
+    num_pages = math.ceil(num_posts / limit )
+
+    return jsonify({'message': f"Successfully received {date_type} {post_type} posts", 'pages': num_pages, 'posts': res})
 
 # get individual post by type and id
 @app.route('/api/<post_type>/<post_id>')
@@ -80,46 +137,6 @@ def get_post(post_type, post_id):
         res.status_code = 404
         return res
 
-# get all posts with specified topic_id -- USE FOR PAGINATE
-@app.route('/api/post/<topic_id>')
-def delete_post(topic_id):
-    post = Post.query.filter_by(topic_id=topic_id).first()
-    if post:
-        db.session.delete(post)
-        db.session.commit()
-        output = {}
-    else:
-        output = 'already deleted'
-    
-    return jsonify({'message': 'Successfully deleted post', 'output': output})
-
-# get all posts by type or add new post to type
-@app.route('/api/<post_type>', methods=['GET', 'POST'])
-def get_posts(post_type):
-    if request.method == 'GET':
-        post_type = post_type.upper()
-        posts = Post.query.filter_by(post_type=post_type).all()
-        if len(posts) > 0:
-            output = posts_schema.dump(posts)
-            return jsonify({'message': 'Successfully received posts', 'posts': output})
-        else:
-            res = jsonify({'error': f"{post_type} is not a valid post type"})
-            res.status_code = 404
-            return res
-    if request.method == 'POST':
-        data = request.json
-        new_db_post = Post(data['title'], data['topic_id'], data['url'], data['creator'], data['created'], data['views'], data['replies'], data['last_updated'], data['post_type'])
-        db.session.add(new_db_post)
-        db.session.commit()
-
-        for img_url in data['images']:
-            new_db_image = Image(img_url, new_db_post)
-            db.session.add(new_db_image)
-            db.session.commit()
-        db.session.close()
-
-        return jsonify({'message': 'Successfully added new post'})
-
 # update db by type
 @app.route('/api/update/<post_type>')
 def update(post_type):
@@ -130,7 +147,7 @@ def update(post_type):
         url = 'https://geekhack.org/index.php?board=132.0'
         page_small_data = get_page_posts_small_data(url)
         for post_small_data in page_small_data:
-            post_all_data = get_all_post_data(post_small_data, post_type)
+            post_all_data = get_all_post_data(post_small_data)
             value = check_post(post_all_data, Post, Image, db)
             if value == 1:
                 break
@@ -139,7 +156,7 @@ def update(post_type):
         url = 'https://geekhack.org/index.php?board=70.0'
         page_small_data = get_page_posts_small_data(url)
         for post_small_data in page_small_data:
-            post_all_data = get_all_post_data(post_small_data, post_type)
+            post_all_data = get_all_post_data(post_small_data)
             value = check_post(post_all_data, Post, Image, db)
             if value == 1:
                 break
@@ -150,27 +167,5 @@ def update(post_type):
 
     return jsonify({'message': f"Successfully updated {post_type}."})
 
-@app.route('/api/latest/<post_type>')
-def get_latest_posts(post_type):
-    post_type = post_type.upper()
-    latest_posts = db.engine.execute(f"SELECT * FROM post WHERE post_type = '{post_type}' ORDER BY SUBSTRING(last_updated, LENGTH(last_updated) - 3, 4) DESC, EXTRACT(MONTH FROM to_date(SUBSTRING(last_updated, 15, LENGTH(last_updated) - 23), 'Mon')) DESC, SUBSTRING(last_updated, LENGTH(last_updated) - 7, 2) DESC, SUBSTRING(last_updated, 1,8) DESC LIMIT 10")
-    output = posts_schema.dump(latest_posts)
-    return jsonify({'message': 'TEST', 'posts': output})
-
-@app.route('/api/newest/<post_type>')
-def get_newest_posts(post_type):
-    post_type = post_type.upper()
-    page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 5, type=int)
-    start_index = (page-1) * limit
-    last_index = page * limit
-    newest_posts = db.engine.execute(f"SELECT * FROM post WHERE post_type = '{post_type}' ORDER BY SUBSTRING(created, LENGTH(created) - 3, 4) DESC, EXTRACT(MONTH FROM to_date(SUBSTRING(created, 15, LENGTH(created) - 23), 'Mon')) DESC, SUBSTRING(created, LENGTH(created) -7, 2) DESC, SUBSTRING(created, 1, 8) DESC LIMIT 10")
-    # print(newest_posts)
-    # print(dir(newest_posts))
-    print(newest_posts.lastrowid)
-    test = posts_schema.dump(newest_posts)
-    output = test[start_index:last_index]
-    return jsonify({'message': f"Successfully received newest {post_type} posts", 'posts': output})
-    
 if __name__ == "__main__":
     app.run()
