@@ -69,20 +69,38 @@ post_schema = PostSchema()
 images_schema = ImageSchema(many=True)
 image_schema = ImageSchema()
 
+# add a new post to the db
+# this will only be used when populating the db for the first time. That's why we aren't checking if any of the information is missing
+@app.route('/api/new', methods=['POST'])
+def add_post():
+    post = request.json
+    print(f"adding {post['title']}")
+    new_db_post = Post(post['title'], post['topic_id'], post['url'], post['creator'], post['created'], post['views'], post['replies'], post['last_updated'], post['post_type'])
+    db.session.add(new_db_post)
+    db.session.commit()
+    print('adding images')
+    for img in post['images']:
+        new_db_image = Image(img, new_db_post)
+        db.session.add(new_db_image)
+        db.session.commit()
+    db.session.close()
+    return jsonify({'message': f"Successfully added {post['title']} into the system"})
+
+# get posts that match search query
 @app.route('/api/posts', methods=['POST'])
 def get_posts_by_query():
     if request.method == 'POST':
         search_query = request.json['query'].lower()
         limit = request.args.get('limit', 25, type=int)
-        posts= db.engine.execute(f"SELECT p.*, array_agg(i.image_url) AS images FROM post p LEFT JOIN image i ON i.post_id = p.id WHERE LOWER(p.title) LIKE '%%{search_query}%%' GROUP BY 1")
+        posts = db.engine.execute(f"SELECT p.*, array_agg(i.image_url) AS images FROM post p LEFT JOIN image i ON i.post_id = p.id WHERE LOWER(p.title) LIKE '%%{search_query}%%' GROUP BY 1")
         res = [dict(post._mapping.items()) for post in posts]
 
         num_posts = len(res)
         num_pages = math.ceil(num_posts / limit)
-        print(num_posts)
 
         return jsonify({"message": f"Successfully received posts matching: {search_query}", 'pages': num_pages, 'posts': res})
 
+# get posts by post and date
 @app.route('/api/<date_type>/<post_type>')
 # date_type -> latest or newest
 # post_type -> IC, GB, or All

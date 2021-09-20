@@ -12,8 +12,8 @@ def populate_helper(post_type, last_page, url):
         small_page_data = get_page_posts_small_data(current_url)
         for post_small_data in small_page_data:
             post_all_data = get_all_post_data(post_small_data)
-            print(f"adding {post_all_data['title']}")
-            requests.post(f"{API_URL}/{post_type}", json = post_all_data)
+            print(f"working on {post_all_data['title']}")
+            requests.post(f"{API_URL}/new", json = post_all_data)
         count += 50
         print(f"finished scraping {i} of {last_page} - {post_type}")
 
