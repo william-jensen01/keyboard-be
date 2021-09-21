@@ -171,16 +171,29 @@ def check_post(post_all_data, post_model, image_model, db):
     else:
       updated_db_post = update_post(db_post, post_all_data)
       db.session.commit()
-      if len(db_post.images) != len(post_all_data['images']):
+      print(updated_db_post.images)
+      if len(updated_db_post.images) != len(post_all_data['images']):
         print('adding new images')
+        # delete all images with post id
+        # add images again
+        images = image_model.query.filter_by(post_id=updated_db_post['id'])
+        for img in images:
+          db.session.delete(img)
+        db.session.commit()
+
         for img_url in post_all_data['images']:
-          image = image_model.query.filter_by(image_url=img_url).first()
-          if image:
-            continue
-          else:
-            new_db_image = image_model(img_url, updated_db_post)
-            db.session.add(new_db_image)
-            db.session.commit()
+          new_db_image = image_model(img_url, updated_db_post)
+          db.session.add(new_db_image);
+          db.session.commit()
+        
+        # for img_url in post_all_data['images']:
+        #   image = image_model.query.filter_by(image_url=img_url).first()
+        #   if image:
+        #     continue
+        #   else:
+        #     new_db_image = image_model(img_url, updated_db_post)
+        #     db.session.add(new_db_image)
+        #     db.session.commit()
       return 0
 
     db.session.close()
