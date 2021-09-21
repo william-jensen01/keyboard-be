@@ -102,29 +102,35 @@ def get_all_post_data(small_data):
   post_images = []
   images = post_container.find_all('img')
   for image in images:
-      image_url = image.get('src')
-
-      # if url is geekhack, remove PHPSESSID from url
-      if image_url.startswith('https://geekhack.org'):
-        split_url = re.split('\?|&', image_url)
-        new_url = f"{split_url[0]}?{split_url[2]}"
-        post_images.append(new_url)
-      elif image_url.startswith('https://cdn.geekhack.org'):
-        pass
-      else:
+    image_url = image.get('src')
+    # if url is geekhack, remove PHPSESSID from url
+    if image_url.startswith('https://geekhack.org'):
+      split_url = re.split('\?|&', image_url) # split the url by ? and &
+      new_url = f"{split_url[0]}?{split_url[2]}" # create new url but leave phpsessid part out
+      post_images.append(new_url)
+    # if url starts with cdn.geekhack, don't add it because it's an emoji
+    # there are 2 different urls for geekhack 'images' -- cdn.geekhack (emojis - yes, they count as images) and geekhack (normal images)
+    elif image_url.startswith('https://cdn.geekhack.org'):
+      pass
+    # if url is from discord split and if specific index isn't 'attachments' don't add it
+    elif image_url.startswith('https://cdn.discordapp'):
+      split_url = image_url.split('/')
+      if split_url[3] == 'attachments':
         post_images.append(image_url)
-        
+    else:
+      post_images.append(image_url)
+
   all_data = {
-  'title': post_title,
-  'topic_id': topic_id,
-  'url': url,
-  'creator': post_creator,
-  'created': date_created,
-  'images': post_images,
-  'views': views,
-  'replies': replies,
-  'last_updated': last_updated,
-  'post_type': post_type
+  "title": post_title,
+  "topic_id": topic_id,
+  "url": url,
+  "creator": post_creator,
+  "created": date_created,
+  "images": post_images,
+  "views": views,
+  "replies": replies,
+  "last_updated": last_updated,
+  "post_type": post_type
   }
   return all_data
 
