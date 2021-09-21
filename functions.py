@@ -30,7 +30,6 @@ def get_page_posts_small_data(url):
     post_type = 'GB'
 
   all_posts = soup.find_all('td', class_='subject')
-  all_posts_activity_stats = soup.find_all('td', class_='stats')
   all_last_updated_stats = soup.find_all('td', class_='lastpost')
 
   all_posts_url = []
@@ -45,9 +44,6 @@ def get_page_posts_small_data(url):
     post_url = f'https://geekhack.org/index.php?topic={topic_id}.0'
     all_posts_url.append(post_url)
     all_topic_ids.append(topic_id)
-
-  for post_activity in all_posts_activity_stats:
-    all_activity_stats.append(post_activity.text.split())
   
   for post_last_updated in all_last_updated_stats:
     last_updated_reference_list = post_last_updated.text.split()
@@ -65,7 +61,6 @@ def get_page_posts_small_data(url):
     if all_topic_ids[i] not in unaccepted_topic_ids:
       post_small_data = {
         'url': all_posts_url[i],
-        'stats': all_activity_stats[i],
         'last_updated': all_last_updated[i],
         'topic': all_topic_ids[i],
         'post_type': post_type
@@ -75,8 +70,6 @@ def get_page_posts_small_data(url):
 
 def get_all_post_data(small_data):
   url = small_data['url']
-  replies = small_data['stats'][0]
-  views = small_data['stats'][2]
   last_updated = small_data['last_updated']
   topic_id = small_data['topic']
   post_type = small_data['post_type']
@@ -127,8 +120,6 @@ def get_all_post_data(small_data):
   "creator": post_creator,
   "created": date_created,
   "images": post_images,
-  "views": views,
-  "replies": replies,
   "last_updated": last_updated,
   "post_type": post_type
   }
@@ -152,8 +143,6 @@ def update_post(post, data):
   post.url = data['url']
   post.creator = data['creator']
   post.created = data['created']
-  post.views = data['views']
-  post.replies = data['replies']
   post.last_updated = data['last_updated']
   post.post_type = data['post_type']
   return post
@@ -190,7 +179,7 @@ def check_post(post_all_data, post_model, image_model, db):
       return 0
   else:
     print(f"adding {post_all_data['title']}")
-    new_db_post = post_model(post_all_data['title'], post_all_data['topic_id'], post_all_data['url'], post_all_data['creator'], post_all_data['created'], post_all_data['views'], post_all_data['replies'], post_all_data['last_updated'], post_all_data['post_type'])
+    new_db_post = post_model(post_all_data['title'], post_all_data['topic_id'], post_all_data['url'], post_all_data['creator'], post_all_data['created'], post_all_data['last_updated'], post_all_data['post_type'])
     db.session.add(new_db_post)
     db.session.commit()
 

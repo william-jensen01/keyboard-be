@@ -29,19 +29,15 @@ class Post(db.Model):
     creator = db.Column(db.String(50), nullable=False)
     created = db.Column(db.String(35))
     images = db.relationship('Image', backref='post')
-    views = db.Column(db.Integer)
-    replies = db.Column(db.Integer)
     last_updated = db.Column(db.String(35))
     post_type = db.Column(db.String(5), nullable=False)
 
-    def __init__(self, title, topic_id, url, creator, created, views, replies, last_updated, post_type):
+    def __init__(self, title, topic_id, url, creator, created, last_updated, post_type):
         self.title = title
         self.topic_id = topic_id
         self.url = url
         self.creator = creator
         self.created = created
-        self.views = views
-        self.replies = replies
         self.last_updated = last_updated
         self.post_type = post_type
 
@@ -62,7 +58,7 @@ class ImageSchema(ma.SQLAlchemyAutoSchema):
 class PostSchema(ma.SQLAlchemyAutoSchema):
     images = ma.Nested(ImageSchema, many=True)
     class Meta:
-        fields = ('id', 'title', 'topic_id', 'url', 'creator', 'created', 'images','views', 'replies', 'last_updated', 'post_type')
+        fields = ('id', 'title', 'topic_id', 'url', 'creator', 'created', 'images', 'last_updated', 'post_type')
 
 posts_schema = PostSchema(many=True)
 post_schema = PostSchema()
@@ -75,7 +71,7 @@ image_schema = ImageSchema()
 def add_post():
     post = request.json
     print(f"adding {post['title']}")
-    new_db_post = Post(post['title'], post['topic_id'], post['url'], post['creator'], post['created'], post['views'], post['replies'], post['last_updated'], post['post_type'])
+    new_db_post = Post(post['title'], post['topic_id'], post['url'], post['creator'], post['created'], post['last_updated'], post['post_type'])
     db.session.add(new_db_post)
     db.session.commit()
     print('adding images')
