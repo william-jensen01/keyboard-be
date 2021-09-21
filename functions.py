@@ -164,7 +164,7 @@ def check_post(post_all_data, post_model, image_model, db):
       if len(updated_db_post.images) != len(post_all_data['images']):
         print('deleting images')
         # delete all images with post id
-        images = image_model.query.filter_by(post_id=updated_db_post['id'])
+        images = image_model.query.filter_by(post_id=updated_db_post.id)
         for img in images:
           db.session.delete(img)
         db.session.commit()
