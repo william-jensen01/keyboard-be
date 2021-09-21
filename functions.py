@@ -171,32 +171,23 @@ def check_post(post_all_data, post_model, image_model, db):
     else:
       updated_db_post = update_post(db_post, post_all_data)
       db.session.commit()
-      print(updated_db_post.images)
+      # when len of images don't match, delete images and add again. This way we don't have to compare scrapped url to db url. It also removes the possibility of duplicate images
       if len(updated_db_post.images) != len(post_all_data['images']):
-        print('adding new images')
+        print('deleting images')
         # delete all images with post id
-        # add images again
         images = image_model.query.filter_by(post_id=updated_db_post['id'])
         for img in images:
           db.session.delete(img)
         db.session.commit()
 
+        print('adding images')
+        # add images
         for img_url in post_all_data['images']:
           new_db_image = image_model(img_url, updated_db_post)
-          db.session.add(new_db_image);
+          db.session.add(new_db_image)
           db.session.commit()
-        
-        # for img_url in post_all_data['images']:
-        #   image = image_model.query.filter_by(image_url=img_url).first()
-        #   if image:
-        #     continue
-        #   else:
-        #     new_db_image = image_model(img_url, updated_db_post)
-        #     db.session.add(new_db_image)
-        #     db.session.commit()
+      db.session.close()
       return 0
-
-    db.session.close()
   else:
     print(f"adding {post_all_data['title']}")
     new_db_post = post_model(post_all_data['title'], post_all_data['topic_id'], post_all_data['url'], post_all_data['creator'], post_all_data['created'], post_all_data['views'], post_all_data['replies'], post_all_data['last_updated'], post_all_data['post_type'])
