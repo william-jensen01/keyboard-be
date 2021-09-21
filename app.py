@@ -1,4 +1,3 @@
-from re import search
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -6,12 +5,11 @@ from flask_marshmallow import Marshmallow
 import os
 import math
 
-from functions import update_post, get_all_post_data, get_page_posts_small_data, get_last_page, check_post
+from functions import get_all_post_data, get_page_posts_small_data, check_post
 
 app = Flask(__name__)
 CORS(app)
 
-app.debug = True
 uri = os.getenv('DATABASE_URL')
 if uri.startswith('postgres://'):
     uri = uri.replace('postgres://', 'postgresql://', 1)
