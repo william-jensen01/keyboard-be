@@ -156,6 +156,7 @@ def check_post(post_all_data, post_model, image_model, db):
   db_post = post_model.query.filter_by(topic_id=post_topic_id).first()
   # checking to see if post exists in database
   if db_post:
+    print(f"checking {db_post.title}")
     db_post_time = db_post.last_updated
     if db_post_time == post_time and db_post.topic_id == post_topic_id:
       return 1
