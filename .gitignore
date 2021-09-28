@@ -140,3 +140,4 @@ cython_debug/
 # My ignores
 .vscode
 populate_db.py
+test.py
