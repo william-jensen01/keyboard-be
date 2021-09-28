@@ -68,12 +68,7 @@ def get_page_posts_small_data(url):
       small_data.append(post_small_data)
   return small_data
 
-def get_all_post_data(small_data):
-  url = small_data['url']
-  last_updated = small_data['last_updated']
-  topic_id = small_data['topic']
-  post_type = small_data['post_type']
-
+def get_post_data(url):
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
 
@@ -115,15 +110,25 @@ def get_all_post_data(small_data):
 
   all_data = {
   "title": post_title,
-  "topic_id": topic_id,
   "url": url,
   "creator": post_creator,
   "created": date_created,
   "images": post_images,
-  "last_updated": last_updated,
-  "post_type": post_type
   }
   return all_data
+
+def get_all_post_data(small_data, post_data):
+  return {
+    "url": small_data['url'],
+    "last_updated": small_data['last_updated'],
+    "topic_id": small_data['topic'],
+    "post_type": small_data['post_type'],
+    "title": post_data['title'],
+    "url": post_data['url'],
+    "creator": post_data['creator'],
+    "created": post_data['created'],
+    "images": post_data['images'],
+  }
 
 def update_post(post, data):
   post.title = data['title']
