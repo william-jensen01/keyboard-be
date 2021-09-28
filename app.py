@@ -5,7 +5,7 @@ from flask_marshmallow import Marshmallow
 import os
 import math
 
-from functions import get_all_post_data, get_page_posts_small_data, check_post
+from functions import get_all_post_data, get_page_posts_small_data, get_post_data, check_post
 
 app = Flask(__name__)
 CORS(app)
@@ -158,18 +158,20 @@ def update(post_type):
     if post_type == 'IC':
         url = 'https://geekhack.org/index.php?board=132.0'
         page_small_data = get_page_posts_small_data(url)
-        for post_small_data in page_small_data:
-            post_all_data = get_all_post_data(post_small_data)
-            value = check_post(post_all_data, Post, Image, db)
+        for small_post_data in page_small_data:
+            post_data = get_post_data(small_post_data['url'])
+            all_post_data = get_all_post_data(small_post_data, post_data)
+            value = check_post(all_post_data, Post, Image, db)
             if value == 1:
                 break
 
     if post_type == 'GB':
         url = 'https://geekhack.org/index.php?board=70.0'
         page_small_data = get_page_posts_small_data(url)
-        for post_small_data in page_small_data:
-            post_all_data = get_all_post_data(post_small_data)
-            value = check_post(post_all_data, Post, Image, db)
+        for small_post_data in page_small_data:
+            post_data = get_post_data(small_post_data['url'])
+            all_post_data = get_all_post_data(small_post_data, post_data)
+            value = check_post(all_post_data, Post, Image, db)
             if value == 1:
                 break
 
