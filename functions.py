@@ -72,7 +72,7 @@ def get_post_data(url):
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
 
-  post_container = soup.find('div', class_="post")
+  post_container = soup.find('div', class_="postarea")
   poster_container = soup.find('div', class_="poster")
 
   post_title = soup.find('h5').text.replace(f"\n", '').lstrip()
