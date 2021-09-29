@@ -18,10 +18,12 @@ def get_last_page(url):
   return last_page
 
 # get all the data on the forum page for each post (data that is exclusive to that page)
+# to do this the whole page much be scrapped as there is no way individually
 def get_page_posts_small_data(url):
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
 
+  # set post type by grabbing relevant number in the url and seeing if it's the number for ic or gb
   post_type = ''
   board_num = re.split('\.|\=', url)[-2]
   if board_num == '132':
@@ -34,9 +36,9 @@ def get_page_posts_small_data(url):
 
   all_posts_url = []
   all_topic_ids = []
-  all_activity_stats = []
   all_last_updated = []
 
+  # for each post get the url, cut out the phpsessid, and save the url and topic id
   for post in all_posts:
     weird_url = post.find('a').get('href')
     url_list = weird_url.split('=')
@@ -45,6 +47,7 @@ def get_page_posts_small_data(url):
     all_posts_url.append(post_url)
     all_topic_ids.append(topic_id)
   
+  # reformat the date for last updated 
   for post_last_updated in all_last_updated_stats:
     last_updated_reference_list = post_last_updated.text.split()
     time = last_updated_reference_list[4]
@@ -56,7 +59,7 @@ def get_page_posts_small_data(url):
     all_last_updated.append(last_updated)
 
   small_data = []
-  unaccepted_topic_ids = set(('36672', '70569', '77272', '57761', '88717', '36773'))
+  unaccepted_topic_ids = set(('36672', '70569', '77272', '57761', '88717', '36773')) # these are the topic ids of posts that are pinned on Geekhack
   for i in range(len(all_posts_url)):
     if all_topic_ids[i] not in unaccepted_topic_ids:
       post_small_data = {
@@ -68,6 +71,7 @@ def get_page_posts_small_data(url):
       small_data.append(post_small_data)
   return small_data
 
+# given a post's url, get the data for that post
 def get_post_data(url):
   req = requests.get(url)
   soup = BeautifulSoup(req.content, 'html.parser')
@@ -117,6 +121,7 @@ def get_post_data(url):
   }
   return all_data
 
+# given both small and regular post data, combine them to have all data for that post
 def get_all_post_data(small_data, post_data):
   return {
     "url": small_data['url'],
