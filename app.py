@@ -5,7 +5,7 @@ from flask_marshmallow import Marshmallow
 import os
 import math
 
-from functions import get_all_post_data, get_page_posts_small_data, get_post_data, check_post
+from functions import get_all_post_data, get_page_posts_small_data, get_post_data, check_post, get_post_details
 
 app = Flask(__name__)
 CORS(app)
@@ -62,6 +62,10 @@ posts_schema = PostSchema(many=True)
 post_schema = PostSchema()
 images_schema = ImageSchema(many=True)
 image_schema = ImageSchema()
+
+@app.route('/api')
+def running():
+    return jsonify({'message': 'Up and well'})
 
 # add a new post to the db
 # this will only be used when populating the db for the first time. That's why we aren't checking if any of the information is missing
@@ -146,6 +150,17 @@ def get_post(post_type, post_id):
         return jsonify({'message': 'Successfully received post', 'post': output})
     else:
         res = jsonify({'error': f"{post_type} Post with specified id or type does not exist."})
+        res.status_code = 404
+        return res
+
+@app.route('/api/post/<post_id>/detailed')
+def get_detailed_post(post_id):
+    post = Post.query.filter_by(id=post_id).first()
+    if post:
+        detailed_data = get_post_details(post.url)
+        return jsonify({'message': f"Successfully received details for post {post_id}", 'details': f"{detailed_data}"})
+    else:
+        res = jsonify({'error': 'Post does not exist'})
         res.status_code = 404
         return res
 
