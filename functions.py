@@ -121,6 +121,13 @@ def get_post_data(url):
   }
   return all_data
 
+def get_post_details(url):
+  req = requests.get(url)
+  soup = BeautifulSoup(req.content, 'html.parser')
+
+  post_container = soup.find('div', class_="inner")
+  return post_container
+
 # given both small and regular post data, combine them to have all data for that post
 def get_all_post_data(small_data, post_data):
   return {
