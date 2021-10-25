@@ -184,8 +184,10 @@ def check_post(post_all_data, post_model, image_model, db):
       print(f"updating post")
       updated_db_post = update_post(db_post, post_all_data)
       db.session.commit()
-      if len(updated_db_post.images) != len(post_all_data['images']):
-        reset_images(db, updated_db_post, post_all_data, image_model)
+
+      # We want to reset the images everytime a post needs to be updated because what if a post previously had 5 images but the designer decided to update all 5 images with better renderings
+      reset_images(db, updated_db_post, post_all_data, image_model)
+      
       db.session.close()
       return 0
 
