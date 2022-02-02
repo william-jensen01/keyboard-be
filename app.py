@@ -170,8 +170,7 @@ def update(post_type):
     post_type = post_type.upper()
     url = ''
 
-    if post_type == 'IC':
-        url = 'https://geekhack.org/index.php?board=132.0'
+    def scrape_posts(url):
         page_small_data = get_page_posts_small_data(url)
         for small_post_data in page_small_data:
             post_data = get_post_data(small_post_data['url'])
@@ -180,15 +179,13 @@ def update(post_type):
             if value == 1:
                 break
 
+    if post_type == 'IC':
+        url = 'https://geekhack.org/index.php?board=132.0'
+        scrape_posts(url)
+
     if post_type == 'GB':
         url = 'https://geekhack.org/index.php?board=70.0'
-        page_small_data = get_page_posts_small_data(url)
-        for small_post_data in page_small_data:
-            post_data = get_post_data(small_post_data['url'])
-            all_post_data = get_all_post_data(small_post_data, post_data)
-            value = check_post(all_post_data, Post, Image, db)
-            if value == 1:
-                break
+        scrape_posts(url)
 
     if post_type == 'DB':
         update('IC')
