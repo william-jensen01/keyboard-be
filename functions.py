@@ -59,7 +59,7 @@ def get_page_posts_small_data(url):
     all_last_updated.append(last_updated)
 
   small_data = []
-  unaccepted_topic_ids = set(('36672', '70569', '77272', '57761', '88717', '36773')) # these are the topic ids of posts that are pinned on Geekhack
+  unaccepted_topic_ids = set(('36672', '70569', '77272', '57761', '88717', '36773', '115197')) # these are the topic ids of posts that are pinned on Geekhack
   for i in range(len(all_posts_url)):
     if all_topic_ids[i] not in unaccepted_topic_ids:
       post_small_data = {
