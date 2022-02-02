@@ -138,6 +138,7 @@ dmypy.json
 cython_debug/
 
 # My ignores
+.env
 .vscode
 populate_db.py
 test.py
