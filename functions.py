@@ -114,19 +114,11 @@ def get_post_data(url):
 
   all_data = {
   "title": post_title,
-  "url": url,
   "creator": post_creator,
   "created": date_created,
   "images": post_images,
   }
   return all_data
-
-def get_post_details(url):
-  req = requests.get(url)
-  soup = BeautifulSoup(req.content, 'html.parser')
-
-  post_container = soup.find('div', class_="inner")
-  return post_container
 
 # given both small and regular post data, combine them to have all data for that post
 def get_all_post_data(small_data, post_data):
@@ -136,7 +128,6 @@ def get_all_post_data(small_data, post_data):
     "topic_id": small_data['topic'],
     "post_type": small_data['post_type'],
     "title": post_data['title'],
-    "url": post_data['url'],
     "creator": post_data['creator'],
     "created": post_data['created'],
     "images": post_data['images'],
