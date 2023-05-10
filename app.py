@@ -65,7 +65,7 @@ image_schema = ImageSchema()
 
 @app.route('/api')
 def running():
-    return jsonify({'message': 'Up and well'})
+    return jsonify({'message': 'Up and well', 'test': 'yes'})
 
 # add a new post to the db
 # this will only be used when populating the db for the first time. That's why we aren't checking if any of the information is missing
