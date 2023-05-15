@@ -7,13 +7,14 @@ name = "pypi"
 beautifulsoup4 = "*"
 requests = "*"
 flask = "*"
-flask-sqlalchemy = "*"
 psycopg2 = "*"
 gunicorn = "*"
 flask-marshmallow = "*"
 marshmallow-sqlalchemy = "*"
 flask-cors = "*"
 python-dotenv = "*"
+click = "*"
+flask-sqlalchemy = "*"
 
 [dev-packages]
 

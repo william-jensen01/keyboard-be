@@ -139,6 +139,7 @@ cython_debug/
 
 # My ignores
 .env
+.flaskenv
 .vscode
 populate_db.py
 test.py

@@ -1,0 +1,31 @@
+from flask import Flask
+from flask_cors import CORS
+import os
+
+from .extensions import db, ma
+from .commands import create_tables, populate_ic, populate_gb, populate_db
+from .routes.api import api as api_bp
+from .routes.posts import posts as posts_bp
+
+def create_app(config_file="settings.py"):
+    app = Flask(__name__)
+    CORS(app)
+
+    app.config.from_pyfile(config_file)
+
+    db.init_app(app) 
+    ma.init_app(app)
+
+    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(posts_bp, url_prefix='/api/posts')
+
+    app.cli.add_command(create_tables)
+    app.cli.add_command(populate_ic)
+    app.cli.add_command(populate_gb)
+    app.cli.add_command(populate_db)
+
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True, host="10.0.0.133")
