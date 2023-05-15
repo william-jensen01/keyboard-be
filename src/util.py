@@ -231,7 +231,9 @@ def populate_helper(post_type, url):
       for img in post_data['images']:
         new_db_image = Image(img, new_db_post)
         db.session.add(new_db_image)
-        db.session.commit()
+      
+      db.session.commit()
+
 
     count += 50
     print(f"finished scraping {i} of {last_page} - {post_type}")
