@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 
 from .extensions import db, ma
-from .commands import create_tables, populate_ic, populate_gb, populate_db
+from .commands import create_tables
 from .routes.api import api as api_bp
 from .routes.posts import posts as posts_bp
 
@@ -20,9 +20,6 @@ def create_app(config_file="settings.py"):
     app.register_blueprint(posts_bp, url_prefix='/api/posts')
 
     app.cli.add_command(create_tables)
-    app.cli.add_command(populate_ic)
-    app.cli.add_command(populate_gb)
-    app.cli.add_command(populate_db)
 
     return app
 
