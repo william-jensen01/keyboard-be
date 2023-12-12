@@ -113,3 +113,13 @@ def get_posts(post_type, sort_type):
     res = [dict(post_schema.dump(post), images=[img.image_url for img in post.images]) for post in queried_posts.items]
 
     return jsonify({'message': f"Successfully received {sort_type} posts - {post_type}", 'posts': res, 'page_info': page_info})
+
+# # delete post by topic_id
+# @posts.route('/<topic_id>', methods=['DELETE'])
+# def delete_post(topic_id):
+#     post_to_delete = Post.query.filter_by(topic_id=topic_id).first()
+#     if post_to_delete:
+#         db.session.delete(post_to_delete)
+#         db.session.commit()
+
+#     return ('', 204)
