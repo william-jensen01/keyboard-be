@@ -33,35 +33,34 @@ def get_page_posts_small_data(url):
   if board_num == '70':
     post_type = 'GB'
 
-  # Find all posts on the page and their corresponding last updated information
-  all_posts = soup.find_all('td', class_='subject')
-  all_last_updated_stats = soup.find_all('td', class_='lastpost')
+  # get all table rows in table body where it has data cell with class 'windowbg2'
+  all_posts = soup.select('tbody tr:has(td.windowbg2)');
 
   small_data = [] # initialize an empty list to store the filtered data
-  unaccepted_topic_ids = set(('36672', '120674', '57761', '115197', '121835', '121348', '118762', '77272')) # these are the topic ids of posts that are pinned on Geekhack
   
-  # for each post get the url, save topic_id from url, create post_url using topic_id, get last_updated stat as datetime, and append post dictionary containing all this data if topic_id is accepted
-  for i in range(len(all_posts)):
+  # for each post get the url, save topic_id from url, create post_url using topic_id, get last_updated stat as datetime, and append post dictionary containing all this data
+  for row in all_posts:
+    subject_column = row.find('td', class_="subject")
+    updated_column = row.find('td', class_="lastpost")
     # contains /index.php?PHPSESSID=...&topic=...
-    weird_url = all_posts[i].find('a').get('href')
+    weird_url = subject_column.find('a').get('href')
     url_parts = re.split('\D+', weird_url)
     topic_id = url_parts[-2]
     post_url = f'https://geekhack.org/index.php?topic={topic_id}.0'
 
-    stats_with_author_list = all_last_updated_stats[i].text.split()
+    stats_with_author_list = updated_column.text.split()
     stats_str = ' '.join(stats_with_author_list[:5])
     date_format = "%a, %d %B %Y, %H:%M:%S"
     date_time_obj = datetime.strptime(stats_str, date_format)
 
-    if topic_id not in unaccepted_topic_ids:
-      # create a new dictionary with the relevant data
-      post_small_data = {
-        'url': post_url,
-        'last_updated': date_time_obj,
-        'topic_id': int(topic_id),
-        'post_type': post_type
-      }
-      small_data.append(post_small_data)
+    # create a new dictionary with the relevant data
+    post_small_data = {
+      'url': post_url,
+      'last_updated': date_time_obj,
+      'topic_id': int(topic_id),
+      'post_type': post_type
+    }
+    small_data.append(post_small_data)
   return small_data
 
 # given a post's url, get the data for that post
