@@ -38,8 +38,8 @@ def get_page_posts_small_data(url):
   all_last_updated_stats = soup.find_all('td', class_='lastpost')
 
   small_data = [] # initialize an empty list to store the filtered data
-  unaccepted_topic_ids = set(('36672', '70569', '77272', '57761', '88717', '36773', '115197', '118762')) # these are the topic ids of posts that are pinned on Geekhack
-
+  unaccepted_topic_ids = set(('36672', '120674', '57761', '115197', '121835', '121348', '118762', '77272')) # these are the topic ids of posts that are pinned on Geekhack
+  
   # for each post get the url, save topic_id from url, create post_url using topic_id, get last_updated stat as datetime, and append post dictionary containing all this data if topic_id is accepted
   for i in range(len(all_posts)):
     # contains /index.php?PHPSESSID=...&topic=...
