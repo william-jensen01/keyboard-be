@@ -15,6 +15,7 @@ flask-cors = "*"
 python-dotenv = "*"
 click = "*"
 flask-sqlalchemy = "*"
+supabase = "*"
 
 [dev-packages]
 
