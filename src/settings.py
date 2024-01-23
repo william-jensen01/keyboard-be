@@ -1,6 +1,6 @@
 import os
 
-uri = os.getenv('DATABASE_URL')
+uri = os.getenv('SUPABASE_URL')
 if uri.startswith('postgres://'):
     uri = uri.replace('postgres://', 'postgresql://', 1)
 
