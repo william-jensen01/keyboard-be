@@ -1,8 +1,9 @@
 import os
 
-uri = os.getenv('SUPABASE_URL')
-if uri.startswith('postgres://'):
-    uri = uri.replace('postgres://', 'postgresql://', 1)
+uri = os.environ["SUPABASE_DATABASE_URL"]
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
 
 SQLALCHEMY_DATABASE_URI = uri
-SQLALCHEMY_TRACK_MODIFICATIONS = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
+SQLALCHEMY_TRACK_MODIFICATIONS = os.environ["SQLALCHEMY_TRACK_MODIFICATIONS"]
+SQLALCHEMY_ECHO = True
