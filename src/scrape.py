@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 from datetime import datetime
+import os
 
 
 # get the last page of a forum
@@ -151,9 +152,10 @@ def get_all_post_data(small_data, post_data):
 
 def scrape_imgur(url):
     album_hash = url.split("/")[4]
+    client_id = os.environ["IMGUR_CLIENT_ID"]
     req = requests.get(
         f"https://api.imgur.com/3/album/{album_hash}/images",
-        headers={"Authorization": "Client-ID 39e982751ce97cd"},
+        headers={"Authorization": f"Client-ID {client_id}"},
     )
     images = [image["link"] for image in req.json()["data"]]
     return images
