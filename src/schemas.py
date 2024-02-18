@@ -12,8 +12,11 @@ class PostSchema(ma.SQLAlchemyAutoSchema):
     title = ma.Method("transform_title", dump_only=True)
 
     def get_image_urls(self, post):
-        return [image.image_url for image in post.images]
-        # return [{"url": image.image_url, "order": image.order} for image in post.images]
+        sorted_images = sorted(post.images, key=lambda x: x.order)
+        return [image.image_url for image in sorted_images]
+        # return [
+        #     {"url": image.image_url, "order": image.order} for image in sorted_images
+        # ]
 
     def transform_title(self, post):
         # patterns_to_remove = ["[IC]", "【IC】", "[GB]", "【GB】"]
