@@ -28,4 +28,4 @@ def create_app(config_file="settings.py"):
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, host="10.0.0.133")
+    app.run(host="10.0.0.133")
