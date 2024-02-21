@@ -137,7 +137,6 @@ def get_post_data(url):
 
 # given both small and regular post data, combine them to have all data for that post
 def get_all_post_data(small_data, post_data):
-    print("post data:", post_data)
     return {
         "last_updated": small_data["last_updated"],
         "url": small_data["url"],
