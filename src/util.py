@@ -114,51 +114,57 @@ def process_post(post_all_data):
 
 
 def process_post_comments(topic_id):
-    # get the last page count
-    last_page_count = get_last_page_count(topic_id)
+    try:
+        # get the last page count
+        last_page_count = get_last_page_count(topic_id)
 
-    # get lastest comment
-    queried_comment = (
-        Comment.query.filter_by(post_topic_id=topic_id)
-        .order_by(Comment.number.desc())
-        .first()
-    )
-    comments_to_insert = []
-    number = last_page_count
-    stop_processing = False
+        # get lastest comment
+        queried_comment = (
+            Comment.query.filter_by(post_topic_id=topic_id)
+            .order_by(Comment.number.desc())
+            .first()
+        )
+        comments_to_insert = []
+        number = last_page_count
+        stop_processing = False
 
-    while number >= 0 and not stop_processing:
-        print(f"Working on {number}")
+        while number >= 0 and not stop_processing:
+            print(f"Working on {number}")
 
-        reversed_comments = scrape_page_comments(topic_id, number)[::-1]
+            reversed_comments = scrape_page_comments(topic_id, number)[::-1]
 
-        for comment in reversed_comments:
-            print(comment["number"])
-            if queried_comment and comment["number"] == queried_comment.number:
-                print("found...stopping")
-                stop_processing = True
-                break
-            else:
-                print("adding comment")
-                new_db_comment = Comment(
-                    comment_id=comment["comment_id"],
-                    post_topic_id=topic_id,
-                    number=comment["number"],
-                    link=comment["link"],
-                    commenter=comment["commenter"],
-                    message=comment["message"],
-                    is_starter=comment["is_starter"],
-                    attachment=comment["attachment"],
-                    created_at=comment["created_at"],
-                )
-                comments_to_insert.append(new_db_comment)
-        number -= 50
-    else:
-        # if the loop completes without meeting the condition
-        print("Ended up scraping all comments")
+            for comment in reversed_comments:
+                print(comment["number"])
+                if queried_comment and comment["number"] == queried_comment.number:
+                    print("found...stopping")
+                    stop_processing = True
+                    break
+                else:
+                    print("adding comment")
+                    new_db_comment = Comment(
+                        comment_id=comment["comment_id"],
+                        post_topic_id=topic_id,
+                        number=comment["number"],
+                        link=comment["link"],
+                        commenter=comment["commenter"],
+                        message=comment["message"],
+                        is_starter=comment["is_starter"],
+                        attachment=comment["attachment"],
+                        created_at=comment["created_at"],
+                    )
+                    comments_to_insert.append(new_db_comment)
+            number -= 50
+        else:
+            # if the loop completes without meeting the condition
+            print("Ended up scraping all comments")
 
-    db.session.bulk_save_objects(comments_to_insert)
-    db.session.commit()
+        if comments_to_insert:
+            db.session.bulk_save_objects(comments_to_insert)
+            db.session.commit()
+        else:
+            print("No comments to insert")
+    except Exception as e:
+        raise
 
 
 def populate_helper(post_type, url):

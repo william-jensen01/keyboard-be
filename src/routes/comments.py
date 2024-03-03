@@ -15,10 +15,21 @@ def index():
     return jsonify({"message": "Up and well", "ip": request.remote_addr}), 200
 
 
-@comments.route("/<topic_id>/update")
-def update(topic_id):
-    process_post_comments(topic_id)
-    return jsonify({"message": "Testing"})
+@comments.route("/<post_topic_id>/update")
+def update(post_topic_id):
+    try:
+        post_topic_id = int(post_topic_id)
+    except ValueError:
+        return jsonify({"error": "Invalid post_topic_id"}), 400
+
+    try:
+        process_post_comments(post_topic_id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify(
+        {"message": f"Successfully updated comments related to {post_topic_id}"}
+    )
 
 
 @comments.route("/commenter/<commenter_name>")
@@ -45,7 +56,7 @@ def get_comments_by_commenter(commenter_name):
     )
 
 
-@comments.route("/topic_id>/<sort_type>")
+@comments.route("/<post_topic_id>/<sort_type>")
 def get_comments_from_topic_id(post_topic_id, sort_type="latest"):
     try:
         post_topic_id = int(post_topic_id)
