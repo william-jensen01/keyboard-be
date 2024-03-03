@@ -6,6 +6,7 @@ from .extensions import db, ma
 from .commands import create_tables
 from .routes.api import api as api_bp
 from .routes.posts import posts as posts_bp
+from .routes.comments import comments as comments_bp
 
 
 def create_app(config_file="settings.py"):
@@ -20,6 +21,7 @@ def create_app(config_file="settings.py"):
 
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(posts_bp, url_prefix="/api/posts")
+    app.register_blueprint(comments_bp, url_prefix="/api/comments")
 
     app.cli.add_command(create_tables)
 

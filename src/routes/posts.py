@@ -1,9 +1,13 @@
 from flask import Blueprint, request, jsonify
 from src.extensions import db
 from src.models import Post, Image
-from src.schemas import post_schema, posts_schema, images_schema
-from src.scrape import get_post_data
-from src.util import reset_images
+from src.schemas import (
+    post_schema,
+    posts_schema,
+    images_schema,
+)
+from src.scrape.posts import get_post_data
+from src.util import reset_images, handle_pagination
 
 posts = Blueprint("posts", __name__)
 
@@ -24,26 +28,16 @@ def get_posts_by_query():
     limit = request.args.get("limit", 25, type=int)
     page = request.args.get("page", 1, type=int)
 
-    queried_posts = (
-        Post.query.options(db.joinedload(Post.images))
-        .filter(Post.title.ilike(f"%{search_query}%"))
-        .paginate(page=page, per_page=limit)
-    )
+    queried_posts, pagination = Post.gets(page=page, per_page=limit, title=search_query)
 
-    pagination_info = {
-        "current_page": queried_posts.page,
-        "total_pages": queried_posts.pages,
-        "has_prev": queried_posts.has_prev,
-        "has_next": queried_posts.has_next,
-        "page_range": list(queried_posts.iter_pages()),
-    }
+    page_info = handle_pagination(pagination)
     serialized_posts = posts_schema.dump(queried_posts)
 
     return jsonify(
         {
             "message": f"Successfully received post of likeness to {search_query}",
             "res": serialized_posts,
-            "page_info": pagination_info,
+            "page_info": page_info,
         }
     )
 
@@ -51,11 +45,7 @@ def get_posts_by_query():
 # get individual post by topic_id
 @posts.route("/<topic_id>")
 def get_post(topic_id):
-    post = (
-        Post.query.options(db.joinedload(Post.images))
-        .filter_by(topic_id=topic_id)
-        .first()
-    )
+    post = Post.get(topic_id=int(topic_id))
     if post:
         post = post_schema.dump(post)
     return jsonify({"message": "Successfully received post", "post": post})
@@ -71,9 +61,11 @@ def get_post_images(topic_id):
     )
 
 
-@posts.route("/<topic_id>/scrape")
+@posts.route("/<topic_id>/reset-images")
 def rescrape_post(topic_id):
-    post = Post.query.filter_by(topic_id=topic_id).first()
+    post = Post.get(
+        topic_id=int(topic_id), include_images=False, include_comments=False
+    )
     post_url = post.url
     scraped_data = get_post_data(post_url)
     reset_images(post, scraped_data)
@@ -112,28 +104,21 @@ def get_posts(post_type, sort_type):
 
     # if IC or GB include SQL WHERE on post_type
     if post_type == "IC" or post_type == "GB":
-        queried_posts = (
-            Post.query.options(db.joinedload(Post.images))
-            .filter_by(post_type=post_type)
-            .order_by(getattr(Post, time).desc())
-            .paginate(page=page, per_page=limit)
+        queried_posts, pagination = Post.gets(
+            post_type=post_type,
+            page=page,
+            per_page=limit,
+            order_by=time,
+            order_dir="desc",
         )
 
     # post_type is ALL so no need to filter
     else:
-        queried_posts = (
-            Post.query.options(db.joinedload(Post.images))
-            .order_by(getattr(Post, time).desc())
-            .paginate(page=page, per_page=limit)
+        queried_posts, pagination = Post.gets(
+            page=page, per_page=limit, order_by=time, order_dir="desc"
         )
 
-    page_info = {
-        "current_page": queried_posts.page,
-        "total_pages": queried_posts.pages,
-        "has_prev": queried_posts.has_prev,
-        "has_next": queried_posts.has_next,
-        "page_range": list(queried_posts.iter_pages()),
-    }
+    page_info = handle_pagination(pagination)
 
     res = posts_schema.dump(queried_posts)
 
@@ -149,10 +134,8 @@ def get_posts(post_type, sort_type):
 # delete post by topic_id
 @posts.route("/delete/<topic_id>", methods=["DELETE"])
 def delete_post(topic_id):
-    post_to_delete = (
-        Post.query.options(db.joinedload(Post.images))
-        .filter_by(topic_id=topic_id)
-        .first()
+    post_to_delete = Post.get(
+        topic_id=int(topic_id), include_images=False, include_comments=False
     )
     if post_to_delete:
         db.session.delete(post_to_delete)

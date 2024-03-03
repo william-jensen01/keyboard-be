@@ -1,12 +1,26 @@
-from .models import Post, Image
+from .models import Post, Image, Comment
 from .extensions import db
-from .scrape import (
+from .scrape.posts import (
     get_last_page,
     get_page_posts_small_data,
     get_post_data,
     get_all_post_data,
 )
+from .scrape.comments import (
+    get_last_page_count,
+    scrape_page_comments,
+)
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+
+def handle_pagination(pagination):
+    return {
+        "current_page": pagination.page,
+        "total_pages": pagination.pages,
+        "has_prev": pagination.has_prev,
+        "has_next": pagination.has_next,
+        "page_range": list(pagination.iter_pages()),
+    }
 
 
 def update_post(db_post, data):
@@ -17,6 +31,7 @@ def update_post(db_post, data):
     db_post.created = data["created"]
     db_post.last_updated = data["last_updated"]
     db_post.post_type = data["post_type"]
+    db_post.body = data["body"]
     return db_post
 
 
@@ -42,7 +57,7 @@ def process_post(post_all_data):
     """
     Check if post exists in db
     If post exists -> compare post.last_updated to db post.last_updated
-      matches -> return 1
+      matches -> return True
       doesn't match -> update db post and reset it's images
     post doesn't exist -> add into db along with its images
     """
@@ -83,6 +98,7 @@ def process_post(post_all_data):
                 created=post_all_data["created"],
                 last_updated=post_all_data["last_updated"],
                 post_type=post_all_data["post_type"],
+                body=post_all_data["body"],
             )
             db.session.add(new_db_post)
             db.session.commit()
@@ -95,6 +111,54 @@ def process_post(post_all_data):
         finally:
             db.session.close()
     return False
+
+
+def process_post_comments(topic_id):
+    # get the last page count
+    last_page_count = get_last_page_count(topic_id)
+
+    # get lastest comment
+    queried_comment = (
+        Comment.query.filter_by(post_topic_id=topic_id)
+        .order_by(Comment.number.desc())
+        .first()
+    )
+    comments_to_insert = []
+    number = last_page_count
+    stop_processing = False
+
+    while number >= 0 and not stop_processing:
+        print(f"Working on {number}")
+
+        reversed_comments = scrape_page_comments(topic_id, number)[::-1]
+
+        for comment in reversed_comments:
+            print(comment["number"])
+            if queried_comment and comment["number"] == queried_comment.number:
+                print("found...stopping")
+                stop_processing = True
+                break
+            else:
+                print("adding comment")
+                new_db_comment = Comment(
+                    comment_id=comment["comment_id"],
+                    post_topic_id=topic_id,
+                    number=comment["number"],
+                    link=comment["link"],
+                    commenter=comment["commenter"],
+                    message=comment["message"],
+                    is_starter=comment["is_starter"],
+                    attachment=comment["attachment"],
+                    created_at=comment["created_at"],
+                )
+                comments_to_insert.append(new_db_comment)
+        number -= 50
+    else:
+        # if the loop completes without meeting the condition
+        print("Ended up scraping all comments")
+
+    db.session.bulk_save_objects(comments_to_insert)
+    db.session.commit()
 
 
 def populate_helper(post_type, url):
@@ -121,6 +185,7 @@ def populate_helper(post_type, url):
                 created=post_all_data["created"],
                 last_updated=post_all_data["last_updated"],
                 post_type=post_all_data["post_type"],
+                body=post_all_data["body"],
             )
 
             try:

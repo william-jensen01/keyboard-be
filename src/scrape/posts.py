@@ -131,22 +131,16 @@ def get_post_data(url):
         "creator": post_creator,
         "created": date_time_obj,
         "images": post_images,
+        "body": str(body),
     }
+
     return all_data
 
 
 # given both small and regular post data, combine them to have all data for that post
 def get_all_post_data(small_data, post_data):
-    return {
-        "last_updated": small_data["last_updated"],
-        "url": small_data["url"],
-        "topic_id": small_data["topic_id"],
-        "post_type": small_data["post_type"],
-        "title": post_data["title"],
-        "creator": post_data["creator"],
-        "created": post_data["created"],
-        "images": post_data["images"],
-    }
+    combined = small_data | post_data
+    return combined
 
 
 def scrape_imgur(url):

@@ -1,7 +1,11 @@
 from flask import Blueprint, request, jsonify
 
-from src.util import process_post
-from src.scrape import get_all_post_data, get_page_posts_small_data, get_post_data
+from src.util import process_post, process_post_comments
+from src.scrape.posts import (
+    get_all_post_data,
+    get_page_posts_small_data,
+    get_post_data,
+)
 
 posts = Blueprint("posts", __name__)
 
@@ -27,6 +31,7 @@ def update(post_type):
             post_data = get_post_data(small_post_data["url"])
             all_post_data = get_all_post_data(small_post_data, post_data)
             stop_processing = process_post(all_post_data)
+            process_post_comments(all_post_data["topic_id"])
             if stop_processing:
                 print("STOPPING")
                 break
