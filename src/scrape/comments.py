@@ -114,13 +114,21 @@ def parse_comment(wrapper):
     items = []
     is_reply_to_quote = False
     for item in contents:
-        if item.name == "div" and "quoteheader" in item["class"]:
+        if (
+            item.name == "div"
+            and item.has_attr("class")
+            and "quoteheader" in item["class"]
+        ):
             continue
         elif item.name == "blockquote":
             quote_info = parse_quote(item)
             is_reply_to_quote = True
             items.append(quote_info)
-        elif item.name == "div" and "quotefooter" in item["class"]:
+        elif (
+            item.name == "div"
+            and item.has_attr("class")
+            and "quotefooter" in item["class"]
+        ):
             continue
         else:
             items.append(item)
