@@ -40,8 +40,6 @@ class Post(db.Model):
 
     @staticmethod
     def get(include_images=True, include_comments=True, **query_options):
-        print("include images", include_images)
-        print("include comments", include_comments)
         query = Post.query
 
         if include_images:
