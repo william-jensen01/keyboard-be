@@ -2,7 +2,15 @@ from bs4 import BeautifulSoup
 import requests
 import re
 from datetime import datetime
+from urllib.parse import urlparse
 import os
+
+
+def uri_validator(parsed_url):
+    try:
+        return all([parsed_url.scheme, parsed_url.netloc])
+    except AttributeError:
+        return False
 
 
 # get the last page of a forum
@@ -97,35 +105,44 @@ def get_post_data(url):
     images = post_container.find_all("img")
     for image in images:
         image_url = image.get("src")
+        parsed_url = urlparse(image_url)
+
+        # return early if invalid url
+        if not uri_validator(parsed_url):
+            continue
+
+        netloc = parsed_url.netloc
         # if url is geekhack, remove PHPSESSID from url
-        if image_url.startswith("https://geekhack.org"):
+        if netloc.startswith("geekhack.org"):
             split_url = re.split("\?|&", image_url)  # split the url by ? and &
             new_url = f"{split_url[0]}?{split_url[2]}"  # create new url but leave phpsessid part out
             post_images.append(new_url)
         # if url starts with cdn.geekhack, don't add it because it's an emoji
         # there are 2 different urls for geekhack 'images' -- cdn.geekhack (emojis - yes, they count as images) and geekhack (normal images)
         # if image url is cdn.geekhack -> pass as it is most likely an emoji
-        elif image_url.startswith("https://cdn.geekhack.org"):
+        elif netloc.startswith("cdn.geekhack.org"):
             pass
         # if url is from discord split and if specific index isn't 'attachments' don't add it
-        elif image_url.startswith("https://cdn.discordapp"):
+        elif netloc.startswith("cdn.discordapp"):
             split_url = image_url.split("/")
             if split_url[3] == "attachments":
                 post_images.append(image_url)
         else:
             post_images.append(image_url)
 
-    if len(post_images) == 0:
-        offsite_images = []
-        links = post_container.find_all("a")
-        for link in links:
-            href = link.get("href")
-            domain = href.split("/")[2]
-            if domain == "imgur.com":
-                imgur_images = scrape_imgur(href)
-                offsite_images.extend(imgur_images)
-        print("no images here")
-        post_images = offsite_images
+    offsite_images = []
+    links = post_container.find_all("a")
+    for link in links:
+        href = link.get("href")
+        split = href.split("/")
+        domain = split[2]
+        a = split[3]
+        # if url is imgur album
+        if len(split) >= 4 and domain == "imgur.com" and a == "a":
+            imgur_images = scrape_imgur(href)
+            offsite_images.extend(imgur_images)
+    post_images.extend(offsite_images)
+
     all_data = {
         "title": post_title,
         "creator": post_creator,
@@ -144,6 +161,7 @@ def get_all_post_data(small_data, post_data):
 
 
 def scrape_imgur(url):
+    print(url)
     album_hash = url.split("/")[4]
     client_id = os.environ["IMGUR_CLIENT_ID"]
     req = requests.get(
