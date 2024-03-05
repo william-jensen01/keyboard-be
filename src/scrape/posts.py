@@ -135,12 +135,13 @@ def get_post_data(url):
     for link in links:
         href = link.get("href")
         split = href.split("/")
-        domain = split[2]
-        a = split[3]
-        # if url is imgur album
-        if len(split) >= 4 and domain == "imgur.com" and a == "a":
-            imgur_images = scrape_imgur(href)
-            offsite_images.extend(imgur_images)
+        if len(split) >= 4:
+            domain = split[2]
+            a = split[3]
+            # if url is imgur album
+            if domain == "imgur.com" and a == "a":
+                imgur_images = scrape_imgur(href)
+                offsite_images.extend(imgur_images)
     post_images.extend(offsite_images)
 
     all_data = {
