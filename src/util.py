@@ -98,7 +98,6 @@ def process_post(post_all_data):
                 created=post_all_data["created"],
                 last_updated=post_all_data["last_updated"],
                 post_type=post_all_data["post_type"],
-                body=post_all_data["body"],
             )
             db.session.add(new_db_post)
             db.session.commit()
