@@ -28,7 +28,9 @@ def get_posts_by_query():
     limit = request.args.get("limit", 25, type=int)
     page = request.args.get("page", 1, type=int)
 
-    queried_posts, pagination = Post.gets(page=page, per_page=limit, title=search_query)
+    queried_posts, pagination = Post.get(
+        many=True, page=page, per_page=limit, title=search_query
+    )
 
     page_info = handle_pagination(pagination)
     serialized_posts = posts_schema.dump(queried_posts)
@@ -63,9 +65,7 @@ def get_post_images(topic_id):
 
 @posts.route("/<topic_id>/reset-images")
 def rescrape_post(topic_id):
-    post = Post.get(
-        topic_id=int(topic_id), include_images=False, include_comments=False
-    )
+    post = Post.get(topic_id=int(topic_id), include_images=False)
     post_url = post.url
     scraped_data = get_post_data(post_url)
     reset_images(post, scraped_data)
@@ -104,18 +104,19 @@ def get_posts(post_type, sort_type):
 
     # if IC or GB include SQL WHERE on post_type
     if post_type == "IC" or post_type == "GB":
-        queried_posts, pagination = Post.gets(
-            post_type=post_type,
+        queried_posts, pagination = Post.get(
+            many=True,
             page=page,
             per_page=limit,
             order_by=time,
             order_dir="desc",
+            post_type=post_type,
         )
 
     # post_type is ALL so no need to filter
     else:
-        queried_posts, pagination = Post.gets(
-            page=page, per_page=limit, order_by=time, order_dir="desc"
+        queried_posts, pagination = Post.get(
+            many=True, page=page, per_page=limit, order_by=time, order_dir="desc"
         )
 
     page_info = handle_pagination(pagination)
@@ -134,9 +135,7 @@ def get_posts(post_type, sort_type):
 # delete post by topic_id
 @posts.route("/delete/<topic_id>", methods=["DELETE"])
 def delete_post(topic_id):
-    post_to_delete = Post.get(
-        topic_id=int(topic_id), include_images=False, include_comments=False
-    )
+    post_to_delete = Post.get(topic_id=int(topic_id), include_images=False)
     if post_to_delete:
         db.session.delete(post_to_delete)
         db.session.commit()

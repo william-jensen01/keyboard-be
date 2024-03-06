@@ -1,8 +1,10 @@
 from .extensions import ma
+from marshmallow import fields
 from .models import Comment, Post
 import re
 import json
 from datetime import datetime
+from src.util import handle_pagination
 
 
 class CommentSchema(ma.SQLAlchemyAutoSchema):
@@ -59,8 +61,18 @@ class ImageSchema(ma.SQLAlchemyAutoSchema):
 
 class PostSchema(ma.SQLAlchemyAutoSchema):
     images = ma.Method("get_image_urls", dump_only=True)
-    comments = ma.Nested(CommentSchema, many=True)
+    comments = fields.Method("comment_pagination", dump_only=True)
     title = ma.Method("transform_title", dump_only=True)
+
+    def comment_pagination(self, post):
+        if not post.comments:
+            return {}
+        comment_schema = CommentSchema(many=True)
+        items = comment_schema.dump(post.comments)
+        return {
+            "pagination": handle_pagination(post.comment_pagination),
+            "items": items,
+        }
 
     def get_image_urls(self, post):
         schema = ImageSchema()

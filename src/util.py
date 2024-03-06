@@ -11,6 +11,7 @@ from .scrape.comments import (
     scrape_page_comments,
 )
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from datetime import datetime
 
 
 def handle_pagination(pagination):
@@ -65,8 +66,7 @@ def process_post(post_all_data):
     post_time = post_all_data["last_updated"]
 
     print(f"checking {post_all_data['title']}")
-
-    db_post = Post.query.filter_by(topic_id=post_topic_id).first()
+    db_post = Post.get(topic_id=int(post_topic_id))
     # checking to see if post exists in database
     if db_post:
         db_post_time = db_post.last_updated
