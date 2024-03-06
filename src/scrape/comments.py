@@ -122,7 +122,6 @@ def parse_quote(blockquote):
 
 # determines if a comment is a reply to another comment
 def parse_comment(wrapper):
-    print("---")
     container = wrapper.find("div", class_="inner")
     contents = container.contents
     items = []
@@ -173,7 +172,6 @@ def scrape_page_comments(topic_id, count):
     comments = []
     for post in post_wrappers:
         basic_comment_info = get_comment_info(post)
-        print(basic_comment_info["commenter"])
         # create link to comment using topic_id and comment_id
         comment_id = basic_comment_info["comment_id"]
         basic_comment_info["link"] = (
