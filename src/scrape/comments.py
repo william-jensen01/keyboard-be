@@ -59,16 +59,29 @@ def parse_quote_header(quote_container):
             info["commenter"] = None
             info["created_at"] = None
         else:
-            # commenter
-            quote_creator = " ".join(split_text[2:-6])
-            info["commenter"] = quote_creator
+            try:
+                # date/created_at
+                date_list = split_text[-5:]
+                quote_date = " ".join(date_list).strip()
+                date_format = "%a, %d %B %Y, %H:%M:%S"
+                quote_datetime = datetime.strptime(quote_date, date_format)
+                info["created_at"] = quote_datetime
 
-            # date/created_at
-            date_list = split_text[-5:]
-            quote_date = " ".join(date_list).strip()
-            date_format = "%a, %d %B %Y, %H:%M:%S"
-            quote_datetime = datetime.strptime(quote_date, date_format)
-            info["created_at"] = quote_datetime
+                # commenter
+                quote_creator = " ".join(split_text[2:-6])
+                info["commenter"] = quote_creator
+            except Exception as err:
+                # it's possible that header_text is in the following format
+                # Quote from: ___ post_id=___ time=___ user_id=___
+
+                info["commenter"] = None
+                pattern = r"time=(\d+)"
+                match = re.search(pattern, header_text)
+                if match:
+                    timestamp = int(match.group(1))
+                    info["created_at"] = datetime.fromtimestamp(timestamp)
+                else:
+                    info["created_at"] = None
 
         return info
 
@@ -109,6 +122,7 @@ def parse_quote(blockquote):
 
 # determines if a comment is a reply to another comment
 def parse_comment(wrapper):
+    print("---")
     container = wrapper.find("div", class_="inner")
     contents = container.contents
     items = []
@@ -159,6 +173,7 @@ def scrape_page_comments(topic_id, count):
     comments = []
     for post in post_wrappers:
         basic_comment_info = get_comment_info(post)
+        print(basic_comment_info["commenter"])
         # create link to comment using topic_id and comment_id
         comment_id = basic_comment_info["comment_id"]
         basic_comment_info["link"] = (
