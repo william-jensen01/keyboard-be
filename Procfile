@@ -1,1 +1,1 @@
-web: gunicorn wsgi:app
+web: gunicorn -t 90 wsgi:app
