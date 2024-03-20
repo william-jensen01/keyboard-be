@@ -162,12 +162,16 @@ def get_all_post_data(small_data, post_data):
 
 
 def scrape_imgur(url):
-    print(url)
+    print(f"Scraping album: {url}")
     album_hash = url.split("/")[4]
     client_id = os.environ["IMGUR_CLIENT_ID"]
-    req = requests.get(
-        f"https://api.imgur.com/3/album/{album_hash}/images",
-        headers={"Authorization": f"Client-ID {client_id}"},
-    )
-    images = [image["link"] for image in req.json()["data"]]
+    images = []
+    try:
+        req = requests.get(
+            f"https://api.imgur.com/3/album/{album_hash}/images",
+            headers={"Authorization": f"Client-ID {client_id}"},
+        )
+        images = [image["link"] for image in req.json()["data"]]
+    except Exception as e:
+        print(f"\nAn error occurred while making the request\n{url}\n")
     return images
