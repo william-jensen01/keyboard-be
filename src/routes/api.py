@@ -31,7 +31,7 @@ def update(post_type):
             post_data = get_post_data(small_post_data["url"])
             all_post_data = get_all_post_data(small_post_data, post_data)
             stop_processing = process_post(all_post_data)
-            process_post_comments(all_post_data["topic_id"])
+            # process_post_comments(all_post_data["topic_id"])
             if stop_processing:
                 print("STOPPING")
                 break
