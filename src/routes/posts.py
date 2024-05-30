@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy.exc import SQLAlchemyError
 from src.extensions import db
 from src.models import Post, Image
 from src.schemas import (
@@ -6,8 +7,8 @@ from src.schemas import (
     posts_schema,
     images_schema,
 )
-from src.scrape.posts import get_post_data
-from src.util import reset_images, handle_pagination
+from src.scrape.posts import get_post_data, get_last_page, scrape_single_post
+from src.util import reset_images, handle_pagination, bulk_insert_images
 
 posts = Blueprint("posts", __name__)
 
@@ -15,6 +16,45 @@ posts = Blueprint("posts", __name__)
 @posts.route("/")
 def index():
     return jsonify({"message": "Up and well", "ip": request.remote_addr}), 200
+
+
+@posts.route("/scrape/<topic_id>")
+def scrape_post(topic_id):
+    try:
+        topic_id = int(topic_id)
+    except Exception as e:
+        return jsonify(
+            {
+                "error": "Could not convert topic_id to an integer. Topic_id must be an integer."
+            }
+        )
+    post = scrape_single_post(topic_id)
+    add = request.args.get("add", False, type=lambda v: v in ["true", "", "1"])
+
+    if add:
+        print(f'Adding {post["title"]}')
+        try:
+            new_db_post = Post(
+                topic_id=post["topic_id"],
+                title=post["title"],
+                url=post["url"],
+                creator=post["creator"],
+                created=post["created"],
+                last_updated=post["last_updated"],
+                post_type=post["post_type"],
+            )
+            db.session.add(new_db_post)
+            db.session.commit()
+
+            bulk_insert_images(new_db_post, post)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Error adding {post['title']}: e")
+        finally:
+            db.session.close()
+
+    return post
 
 
 # get posts that match search query
@@ -116,7 +156,11 @@ def get_posts(post_type, sort_type):
     # post_type is ALL so no need to filter
     else:
         queried_posts, pagination = Post.get(
-            many=True, page=page, per_page=limit, order_by=time, order_dir="desc"
+            many=True,
+            page=page,
+            per_page=limit,
+            order_by=time,
+            order_dir="desc",
         )
 
     page_info = handle_pagination(pagination)

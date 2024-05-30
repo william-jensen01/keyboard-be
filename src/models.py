@@ -163,12 +163,12 @@ class Comment(db.Model):
     def serialize_dict(self, d):
         serialized = {}
         for key, value in d.items():
-            if isinstance(value, datetime):
-                serialized[key] = value.isoformat()
-            elif isinstance(value, dict):
-                serialized[key] = self.serialize_dict(value)
+            # if key == "created_at":
+            #     serialized[key] = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+            if isinstance(value, list):
+                serialized[key] = self.serialize_message(value)
             else:
-                serialized[key] = str(value)
+                serialized[key] = value
         return json.dumps(serialized)
 
     def serialize_message(self, message):
@@ -177,7 +177,7 @@ class Comment(db.Model):
             if isinstance(item, dict):
                 d = self.serialize_dict(item)
                 serialized_list.append(d)
-            else:
-                serialized_list.append(str(item))
+            elif isinstance(item, str):
+                serialized_list.append(item)
 
         return serialized_list

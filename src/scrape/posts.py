@@ -2,8 +2,16 @@ from bs4 import BeautifulSoup
 import requests
 import re
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit, urlunsplit, parse_qs, urlencode
 import os
+
+
+def extract_urls(text):
+    pattern = re.compile(
+        r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
+    )
+    urls = pattern.findall(text)
+    return ["{}://{}{}".format(*url) for url in urls]
 
 
 def uri_validator(parsed_url):
@@ -42,7 +50,22 @@ def get_page_posts_small_data(url):
         post_type = "GB"
 
     # get all table rows in table body where it has data cell with class 'windowbg2'
-    all_posts = soup.select("tbody tr:has(td.windowbg2)")
+    # all_posts = soup.select("tbody tr:has(td.windowbg2)")
+    all_posts = soup.select(
+        "tbody tr:not(.whos_viewing):not(:has(td.stickybg)):not(:has(td.stickybg2))"
+    )
+
+    # rows = soup.select(
+    #     "tbody tr:not(:has(td.stickybg)):not(:has(td.stickybg2)):not(.whos_viewing)"
+    # )
+    # for row in rows:
+    #     subject_column = row.find("td", class_="subject")
+    #     updated_column = row.find("td", class_="lastpost")
+    #     # contains /index.php?PHPSESSID=...&topic=...
+    #     weird_url = subject_column.find("a").get("href")
+    #     url_parts = re.split("\D+", weird_url)
+    #     topic_id = url_parts[-2]
+    #     print(topic_id)
 
     small_data = []  # initialize an empty list to store the filtered data
 
@@ -105,10 +128,13 @@ def get_post_data(url):
     images = post_container.find_all("img")
     for image in images:
         image_url = image.get("src")
-        parsed_url = urlparse(image_url)
-
-        # return early if invalid url
-        if not uri_validator(parsed_url):
+        try:
+            found_urls = extract_urls(image_url)
+            parsed_url = urlparse(found_urls[0])
+            if not uri_validator(parsed_url):
+                raise ValueError("Invalid URL")
+        except Exception as e:
+            print(f"Error parsing URL: {e}")
             continue
 
         netloc = parsed_url.netloc
@@ -159,6 +185,55 @@ def get_post_data(url):
 def get_all_post_data(small_data, post_data):
     combined = small_data | post_data
     return combined
+
+
+def scrape_single_post(topic_id):
+    url_count = 0
+    last_page = get_last_page("https://geekhack.org/index.php?board=132.0")
+    post_wrapper = None
+    i = 1
+
+    while post_wrapper is None and i <= int(last_page):
+        print(f"searching for {topic_id} in {i} of {last_page}")
+        current_url = f"https://geekhack.org/index.php?board=132.{url_count}"
+        req = requests.get(current_url)
+        soup = BeautifulSoup(req.content, "html.parser")
+        links = soup.find_all("a")
+
+        for link in links:
+            href = link.get("href")
+            if href:
+                url = urlparse(href)
+                params = parse_qs(url.query)
+                if "topic" in params and f"{topic_id}.0" in params["topic"]:
+                    if not url.fragment:
+                        # .parent -> span#msg
+                        # x2.parent -> div
+                        # x3.parent -> div.subject
+                        # x4.parent -> tr
+                        post_wrapper = link.parent.parent.parent.parent
+                        break
+        url_count += 50
+        i += 1
+
+    subject_column = post_wrapper.find("td", class_="subject")
+    updated_column = post_wrapper.find("td", class_="lastpost")
+    # contains /index.php?PHPSESSID=...&topic=...
+    post_url = f"https://geekhack.org/index.php?topic={topic_id}.0"
+
+    stats_with_author_list = updated_column.text.split()
+    stats_str = " ".join(stats_with_author_list[:5])
+    date_format = "%a, %d %B %Y, %H:%M:%S"
+    date_time_obj = datetime.strptime(stats_str, date_format)
+    post_small_data = {
+        "url": post_url,
+        "last_updated": date_time_obj,
+        "topic_id": int(topic_id),
+        "post_type": "IC",
+    }
+    post_page_data = get_post_data(post_url)
+
+    return get_all_post_data(post_small_data, post_page_data)
 
 
 def scrape_imgur(url):

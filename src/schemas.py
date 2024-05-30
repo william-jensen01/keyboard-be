@@ -10,16 +10,29 @@ from src.util import handle_pagination
 class CommentSchema(ma.SQLAlchemyAutoSchema):
     message = ma.Method("deserialize_message", dump_only=True)
 
-    def deserialize_message(self, comment):
-        deserialzed = []
-        for item in comment.message:
+    def de_me(self, message):
+        deserialized = []
+        for item in message:
             try:
                 item_dict = json.loads(item)
+                for key in item_dict:
+                    if key == "message":
+                        try:
+                            item_dict[key] = self.de_me(item_dict[key])
+                        except Exception as e:
+                            print("ERROR ERROR ERROR")
+                            print(e)
+
+                deserialized.append(item_dict)
+
             except json.JSONDecodeError:
-                deserialzed.append(item)
-                continue
-            deserialzed.append(item_dict)
-        return deserialzed
+                deserialized.append(item)
+        return deserialized
+
+    def deserialize_message(self, comment):
+        deserialized = []
+        deserialized = self.de_me(comment.message)
+        return deserialized
 
     def convert_dict(self, quote_dict):
         deserialized = {}
@@ -28,7 +41,7 @@ class CommentSchema(ma.SQLAlchemyAutoSchema):
                 try:
                     format_date = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
                     formatted_date = format_date.strftime("%a, %d %B %Y, %H:%M:%S")
-
+                    print(formatted_date)
                     deserialized[key] = formatted_date
                 except ValueError:
                     deserialized[key] = value
@@ -70,7 +83,7 @@ class PostSchema(ma.SQLAlchemyAutoSchema):
         comment_schema = CommentSchema(many=True)
         items = comment_schema.dump(post.comments)
         return {
-            "pagination": handle_pagination(post.comment_pagination),
+            "page_info": handle_pagination(post.comment_pagination),
             "items": items,
         }
 

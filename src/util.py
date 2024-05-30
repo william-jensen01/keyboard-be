@@ -44,6 +44,51 @@ def bulk_insert_images(db_post, post_all_data):
     db.session.bulk_save_objects(new_images)
 
 
+def bulk_insert_comments(comments, post_topic_id):
+    try:
+        new_comments = [
+            Comment(
+                comment_id=comment_data["comment_id"],
+                post_topic_id=post_topic_id,
+                number=comment_data["number"],
+                link=comment_data["link"],
+                commenter=comment_data["commenter"],
+                message=comment_data["message"],
+                is_starter=comment_data["is_starter"],
+                attachment=comment_data["attachment"],
+                created_at=comment_data["created_at"],
+            )
+            for comment_data in comments
+        ]
+        db.session.bulk_save_objects(new_comments)
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+    finally:
+        db.session.close()
+
+
+def insert_comment(comment_data, post_topic_id):
+    try:
+        new_db_comment = Comment(
+            comment_id=comment_data["comment_id"],
+            post_topic_id=post_topic_id,
+            number=comment_data["number"],
+            link=comment_data["link"],
+            commenter=comment_data["commenter"],
+            message=comment_data["message"],
+            is_starter=comment_data["is_starter"],
+            attachment=comment_data["attachment"],
+            created_at=comment_data["created_at"],
+        )
+        db.session.add(new_db_comment)
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+    finally:
+        db.session.close()
+
+
 def reset_images(db_post, post_all_data):
     print("resetting images")
     # Delete existing images in bulk
@@ -71,7 +116,7 @@ def process_post(post_all_data):
     if db_post:
         db_post_time = db_post.last_updated
         if db_post_time == post_time and db_post.topic_id == post_topic_id:
-            print("FOUND MATCH")
+            print("FOUND POST MATCH")
             return True
         else:
             print("updating ^")
@@ -117,6 +162,8 @@ def process_post_comments(topic_id):
         # get the last page count
         last_page_count = get_last_page_count(topic_id)
 
+        print(f"Begin Processing Comments")
+
         # get lastest comment
         queried_comment = (
             Comment.query.filter_by(post_topic_id=topic_id)
@@ -128,18 +175,18 @@ def process_post_comments(topic_id):
         stop_processing = False
 
         while number >= 0 and not stop_processing:
-            print(f"Working on {number}")
+            print(f"Begin Comment Scraping .{number}")
 
             reversed_comments = scrape_page_comments(topic_id, number)[::-1]
 
             for comment in reversed_comments:
-                print(comment["number"])
+                print(f"checking reply #{comment['number']}")
                 if queried_comment and comment["number"] == queried_comment.number:
-                    print("found...stopping")
+                    print("FOUND COMMENT MATCH")
                     stop_processing = True
                     break
                 else:
-                    print("adding comment")
+                    print("adding reply ^")
                     new_db_comment = Comment(
                         comment_id=comment["comment_id"],
                         post_topic_id=topic_id,
@@ -154,14 +201,13 @@ def process_post_comments(topic_id):
                     comments_to_insert.append(new_db_comment)
             number -= 50
         else:
-            # if the loop completes without meeting the condition
-            print("Ended up scraping all comments")
+            # print("Ended up scraping all comments")
+            pass
 
         if comments_to_insert:
+            print("Bulk Saving Comments to Database")
             db.session.bulk_save_objects(comments_to_insert)
             db.session.commit()
-        else:
-            print("No comments to insert")
     except Exception as e:
         raise
 
